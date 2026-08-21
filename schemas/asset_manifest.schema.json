@@ -1,0 +1,1168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dlprentice/img2threejs-godot/schemas/asset_manifest.schema.json",
+  "title": "Asset Forge Manifest",
+  "description": "Engine-neutral, declarative provenance and packaging manifest for a generated GLB. Consumers must treat every string as inert data and must never evaluate manifest content.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "asset",
+    "sourceSpecification",
+    "generator",
+    "coordinateSystem",
+    "artifacts",
+    "meshNodes",
+    "materials",
+    "textures",
+    "lodLevels",
+    "collisionShapes",
+    "pivots",
+    "sockets",
+    "animationHooks",
+    "vfxAnchors",
+    "destructionGroups",
+    "navigationMetadata",
+    "statistics",
+    "licenseAndProvenance",
+    "validationResults",
+    "visualReviewResults",
+    "retryHistory"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "asset-manifest.v0"
+    },
+    "generatedAt": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "displayName"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "sourceSpecification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "schemaVersion", "referenceHashes"],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "referenceHashes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "sha256"],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "sha256": {
+                "$ref": "#/$defs/sha256"
+              }
+            }
+          }
+        }
+      }
+    },
+    "generator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "version",
+        "backend",
+        "upstreamRepository",
+        "upstreamBaselineSha",
+        "seed",
+        "toolVersions"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "backend": {
+          "enum": ["blender"]
+        },
+        "upstreamRepository": {
+          "const": "img2threejs/img2threejs"
+        },
+        "upstreamBaselineSha": {
+          "$ref": "#/$defs/gitSha"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "toolVersions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["blender", "python", "exporter"],
+          "properties": {
+            "blender": {
+              "type": "string",
+              "minLength": 1
+            },
+            "python": {
+              "type": "string",
+              "minLength": 1
+            },
+            "exporter": {
+              "type": "string",
+              "minLength": 1
+            },
+            "godot": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "coordinateSystem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit", "metersPerUnit", "handedness", "forwardAxis", "upAxis"],
+      "properties": {
+        "unit": {
+          "enum": ["meter", "centimeter", "millimeter", "unit"]
+        },
+        "metersPerUnit": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "handedness": {
+          "enum": ["right", "left"]
+        },
+        "forwardAxis": {
+          "$ref": "#/$defs/axis"
+        },
+        "upAxis": {
+          "$ref": "#/$defs/axis"
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/artifact"
+      },
+      "contains": {
+        "type": "object",
+        "required": ["role"],
+        "properties": {
+          "role": {
+            "const": "glb"
+          }
+        }
+      },
+      "minContains": 1
+    },
+    "meshNodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/meshNode"
+      }
+    },
+    "materials": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/material"
+      }
+    },
+    "textures": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/texture"
+      }
+    },
+    "lodLevels": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/lodLevel"
+      }
+    },
+    "collisionShapes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/collisionShape"
+      }
+    },
+    "pivots": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/pivot"
+      }
+    },
+    "sockets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/socket"
+      }
+    },
+    "animationHooks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/animationHook"
+      }
+    },
+    "vfxAnchors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/vfxAnchor"
+      }
+    },
+    "destructionGroups": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/destructionGroup"
+      }
+    },
+    "navigationMetadata": {
+      "$ref": "#/$defs/navigationMetadata"
+    },
+    "statistics": {
+      "$ref": "#/$defs/statistics"
+    },
+    "licenseAndProvenance": {
+      "$ref": "#/$defs/licenseAndProvenance"
+    },
+    "validationResults": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/validationResult"
+      }
+    },
+    "visualReviewResults": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/visualReviewResult"
+      }
+    },
+    "retryHistory": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/retryRecord"
+      }
+    },
+    "godotPackaging": {
+      "$ref": "#/$defs/godotPackaging"
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "gitSha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?![A-Za-z]:).+",
+      "description": "Portable path relative to the manifest directory. Runtime validation must also reject backslashes and parent traversal."
+    },
+    "axis": {
+      "enum": ["+X", "-X", "+Y", "-Y", "+Z", "-Z"]
+    },
+    "vec3": {
+      "type": "array",
+      "prefixItems": [
+        { "type": "number" },
+        { "type": "number" },
+        { "type": "number" }
+      ],
+      "items": false
+    },
+    "quat": {
+      "type": "array",
+      "prefixItems": [
+        { "type": "number" },
+        { "type": "number" },
+        { "type": "number" },
+        { "type": "number" }
+      ],
+      "items": false
+    },
+    "transform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["translation", "rotationQuaternion", "scale"],
+      "properties": {
+        "translation": {
+          "$ref": "#/$defs/vec3"
+        },
+        "rotationQuaternion": {
+          "$ref": "#/$defs/quat"
+        },
+        "scale": {
+          "$ref": "#/$defs/vec3"
+        }
+      }
+    },
+    "bounds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["min", "max"],
+      "properties": {
+        "min": {
+          "$ref": "#/$defs/vec3"
+        },
+        "max": {
+          "$ref": "#/$defs/vec3"
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "role", "path", "sha256", "byteSize"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "role": {
+          "enum": [
+            "glb",
+            "texture",
+            "godot-scene",
+            "preview-render",
+            "validation-report"
+          ]
+        },
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "byteSize": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "meshNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "sourceComponentId",
+        "parentId",
+        "meshFile",
+        "gltfNodeIndex",
+        "transform",
+        "materialIds",
+        "lodLevel",
+        "triangleCount",
+        "bounds"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceComponentId": {
+          "$ref": "#/$defs/id"
+        },
+        "parentId": {
+          "oneOf": [
+            { "$ref": "#/$defs/id" },
+            { "type": "null" }
+          ]
+        },
+        "meshFile": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "gltfNodeIndex": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "transform": {
+          "$ref": "#/$defs/transform"
+        },
+        "materialIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        },
+        "lodLevel": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "triangleCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bounds": {
+          "$ref": "#/$defs/bounds"
+        }
+      }
+    },
+    "material": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "model",
+        "baseColorFactor",
+        "metallicFactor",
+        "roughnessFactor",
+        "doubleSided",
+        "alphaMode",
+        "textureBindings"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "enum": ["pbr-metallic-roughness", "unlit"]
+        },
+        "baseColorFactor": {
+          "type": "array",
+          "prefixItems": [
+            { "type": "number", "minimum": 0, "maximum": 1 },
+            { "type": "number", "minimum": 0, "maximum": 1 },
+            { "type": "number", "minimum": 0, "maximum": 1 },
+            { "type": "number", "minimum": 0, "maximum": 1 }
+          ],
+          "items": false
+        },
+        "metallicFactor": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "roughnessFactor": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "doubleSided": {
+          "type": "boolean"
+        },
+        "alphaMode": {
+          "enum": ["OPAQUE", "MASK", "BLEND"]
+        },
+        "alphaCutoff": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "textureBindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["usage", "textureId", "texCoord", "colorSpace", "strength"],
+            "properties": {
+              "usage": {
+                "enum": [
+                  "base-color",
+                  "metallic-roughness",
+                  "normal",
+                  "occlusion",
+                  "emissive",
+                  "opacity"
+                ]
+              },
+              "textureId": {
+                "$ref": "#/$defs/id"
+              },
+              "texCoord": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "colorSpace": {
+                "enum": ["srgb", "linear"]
+              },
+              "strength": {
+                "type": "number",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "texture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "sha256", "width", "height", "usages", "colorSpace"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "usages": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "base-color",
+              "metallic",
+              "roughness",
+              "normal",
+              "occlusion",
+              "emissive",
+              "opacity"
+            ]
+          }
+        },
+        "colorSpace": {
+          "enum": ["srgb", "linear"]
+        }
+      }
+    },
+    "lodLevel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "level", "screenSizeThreshold", "meshNodeIds", "triangleCount"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "level": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "screenSizeThreshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "distanceMeters": {
+          "type": "number",
+          "minimum": 0
+        },
+        "meshNodeIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        },
+        "triangleCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "collisionShape": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "nodeId", "type", "transform", "isTrigger", "layerRoles"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "nodeId": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "enum": ["box", "sphere", "capsule", "cylinder", "convex", "concave"]
+        },
+        "transform": {
+          "$ref": "#/$defs/transform"
+        },
+        "dimensions": {
+          "$ref": "#/$defs/vec3"
+        },
+        "radius": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "meshNodeId": {
+          "$ref": "#/$defs/id"
+        },
+        "isTrigger": {
+          "type": "boolean"
+        },
+        "layerRoles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "pivot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "nodeId", "purpose", "transform"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "nodeId": {
+          "$ref": "#/$defs/id"
+        },
+        "purpose": {
+          "enum": ["root", "center", "base", "hinge", "rotation", "custom"]
+        },
+        "transform": {
+          "$ref": "#/$defs/transform"
+        }
+      }
+    },
+    "socket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "parentNodeId", "purpose", "transform", "tags"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "parentNodeId": {
+          "$ref": "#/$defs/id"
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "transform": {
+          "$ref": "#/$defs/transform"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "animationHook": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "nodeId", "kind", "channel"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "nodeId": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "hinge",
+            "slider",
+            "rotation",
+            "translation",
+            "visibility",
+            "material-state",
+            "skeleton",
+            "morph-target"
+          ]
+        },
+        "channel": {
+          "type": "string",
+          "minLength": 1
+        },
+        "axis": {
+          "$ref": "#/$defs/vec3"
+        },
+        "limits": {
+          "type": "array",
+          "prefixItems": [
+            { "type": "number" },
+            { "type": "number" }
+          ],
+          "items": false
+        }
+      }
+    },
+    "vfxAnchor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "socketId", "role", "orientationPolicy"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "socketId": {
+          "$ref": "#/$defs/id"
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "orientationPolicy": {
+          "enum": ["socket-local", "world-up", "surface-normal"]
+        }
+      }
+    },
+    "destructionGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "nodeIds", "breakImpulse", "fragmentSocketIds"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "nodeIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        },
+        "breakImpulse": {
+          "type": "number",
+          "minimum": 0
+        },
+        "fragmentSocketIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "navigationMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "staticObstacle",
+        "walkable",
+        "carveNavigation",
+        "avoidanceRadiusMeters",
+        "layerRoles",
+        "footprintNodeIds"
+      ],
+      "properties": {
+        "staticObstacle": {
+          "type": "boolean"
+        },
+        "walkable": {
+          "type": "boolean"
+        },
+        "carveNavigation": {
+          "type": "boolean"
+        },
+        "avoidanceRadiusMeters": {
+          "type": "number",
+          "minimum": 0
+        },
+        "layerRoles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        },
+        "footprintNodeIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "statistics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "triangleCount",
+        "meshCount",
+        "materialCount",
+        "textureCount",
+        "drawCallEstimate",
+        "textureResolutions"
+      ],
+      "properties": {
+        "triangleCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "meshCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "materialCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "textureCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "drawCallEstimate": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "textureResolutions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["textureId", "width", "height"],
+            "properties": {
+              "textureId": {
+                "$ref": "#/$defs/id"
+              },
+              "width": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "height": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "licenseAndProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outputLicense", "upstreamLicense", "notices", "sources"],
+      "properties": {
+        "outputLicense": {
+          "type": "string",
+          "minLength": 1
+        },
+        "upstreamLicense": {
+          "const": "Apache-2.0"
+        },
+        "notices": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "identifier", "license"],
+            "properties": {
+              "type": {
+                "enum": ["reference", "specification", "generator", "texture", "manual-input"]
+              },
+              "identifier": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uri": {
+                "type": "string",
+                "minLength": 1
+              },
+              "license": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "$ref": "#/$defs/sha256"
+              }
+            }
+          }
+        }
+      }
+    },
+    "message": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "severity", "text"],
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/id"
+        },
+        "severity": {
+          "enum": ["info", "warning", "error"]
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "validationResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "validator",
+        "validatorVersion",
+        "status",
+        "checkedAt",
+        "messages",
+        "artifactIds"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "validator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "validatorVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": ["pass", "warning", "fail", "not-run"]
+        },
+        "checkedAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/message"
+          }
+        },
+        "artifactIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "visualReviewResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "profile", "status", "reviewedAt", "views", "scores", "action"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "profile": {
+          "enum": ["neutral", "rts", "isometric", "turntable"]
+        },
+        "status": {
+          "enum": ["pass", "warning", "fail", "not-run"]
+        },
+        "reviewedAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "views": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/relativePath"
+          }
+        },
+        "scores": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "silhouetteReadability": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "referenceSimilarity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "styleConsistency": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "gameplayCameraReadability": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "action": {
+          "enum": ["accept", "repair", "regenerate", "reject"]
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "retryRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attempt",
+        "stage",
+        "reason",
+        "action",
+        "outcome",
+        "startedAt",
+        "finishedAt",
+        "inputSha256"
+      ],
+      "properties": {
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "stage": {
+          "enum": [
+            "intake",
+            "blockout",
+            "structure",
+            "form",
+            "materials",
+            "surface",
+            "optimization",
+            "export",
+            "godot-import",
+            "validation",
+            "visual-review"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "action": {
+          "enum": ["repair", "regenerate", "request-input", "reject"]
+        },
+        "outcome": {
+          "enum": ["pass", "fail", "stopped"]
+        },
+        "startedAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "finishedAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "inputSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "outputSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "tokenOrApiCost": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "godotPackaging": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["godotVersion", "status", "scenePath", "wrapperKind", "importMessages"],
+      "properties": {
+        "godotVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": ["pass", "warning", "fail", "not-run"]
+        },
+        "scenePath": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "wrapperKind": {
+          "enum": ["inherited", "wrapper"]
+        },
+        "importMessages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/message"
+          }
+        },
+        "mappedSocketIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        },
+        "mappedLodIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}
