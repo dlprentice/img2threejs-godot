@@ -90,7 +90,7 @@ class PipelineTest(unittest.TestCase):
             self.assessment,
         )
         self.assertEqual(r.returncode, 0, r.stderr)
-        assessment = json.loads(self.assessment.read_text())
+        assessment = json.loads(self.assessment.read_text(encoding="utf-8"))
         search = assessment["localSpecSearch"]
         self.assertEqual(search["collection"], "cs2")
         self.assertEqual(search["query"], "Karambit Fade")
@@ -107,7 +107,7 @@ class PipelineTest(unittest.TestCase):
             self.spec,
         )
         self.assertEqual(r.returncode, 0, r.stderr)
-        spec = json.loads(self.spec.read_text())
+        spec = json.loads(self.spec.read_text(encoding="utf-8"))
         self.assertEqual(spec["localSpecSearch"]["collection"], "cs2")
         self.assertTrue(spec["localSpecSearch"]["matches"])
 

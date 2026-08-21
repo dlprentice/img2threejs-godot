@@ -226,6 +226,7 @@ def run_cli_fixture(
     malformed_profile=False,
     include_raw_roots=True,
     cache_path=".cache/spec-search/cs2.json",
+    python_io_encoding=None,
 ):
     cli = write_cli_fixture(
         root,
@@ -235,12 +236,15 @@ def run_cli_fixture(
     )
     environment = os.environ.copy()
     environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    if python_io_encoding is not None:
+        environment["PYTHONIOENCODING"] = python_io_encoding
     return subprocess.run(
         [sys.executable, str(cli), *arguments],
         cwd=root,
         env=environment,
         capture_output=True,
         text=True,
+        encoding="utf-8",
         check=False,
     )
 
@@ -1007,6 +1011,20 @@ class CliOutputTest(unittest.TestCase):
         self.assertEqual(repeated.returncode, 0, repeated.stderr)
         self.assertTrue(cached.stdout.strip())
         self.assertEqual(cached.stdout, repeated.stdout)
+
+    def test_cli_forces_utf8_when_inherited_stdio_uses_a_legacy_code_page(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            result = run_cli_fixture(
+                Path(temporary_directory),
+                "roughness",
+                "độ",
+                "nhám",
+                "--json",
+                python_io_encoding="cp1252",
+            )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["query"], "roughness độ nhám")
 
     def test_validation_and_profile_errors_have_documented_codes(self):
         scenarios = (
