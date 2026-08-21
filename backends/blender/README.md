@@ -31,6 +31,8 @@ remain unsupported and fail closed.
 - Materials use independent PBR channels with explicit color spaces and provenance.
 - Render geometry, collision proxies, pivots, and sockets remain separate named objects.
 - Export is atomic: a failed run must not leave a manifest that marks a partial GLB successful.
+- Blender has a bounded default timeout; timeout kills the process tree and removes partial GLBs.
+- A nonempty output directory is allowed only when it contains no backend-owned output names.
 - The result records Blender/Python versions, input and output hashes, timings, warnings, and errors.
 
 ## Output contract
@@ -57,7 +59,7 @@ python -m backends.blender.runtime.run_backend `
   --output runtime/armored-vehicle
 ```
 
-Set `BLENDER_EXECUTABLE` when Blender is not installed at the default Windows location. The proof
+Set `BLENDER_EXECUTABLE`, pass `--blender`, or put Blender on `PATH` when it is not installed at the default Windows location. The proof
 produces a three-part hull/turret/weapon hierarchy, one collider, one rotation pivot, two sockets,
 one painted-metal material, and a 50% triangle-count far LOD. Geometry dimensions are baked while
 node scale remains identity. The manifest's bounds, node indices, triangle counts, and hashes are

@@ -9,7 +9,7 @@ does not declare either game ready to consume this fork.
 | --- | --- |
 | Upstream repository | `img2threejs/img2threejs` |
 | Fork repository | `dlprentice/img2threejs-godot` |
-| Local path | `C:\Users\david\source\img2threejs-godot` |
+| Local path | `<WORKSPACE_ROOT>\img2threejs-godot` |
 | Upstream default branch | `main` |
 | Baseline commit | `d6673386f89673a58736f8d398dd16ece67874f5` |
 | Baseline commit date | `2026-08-06T12:23:34+07:00` |
@@ -71,18 +71,18 @@ this bootstrap; no upstream push or default-branch merge is authorized.
 From PowerShell, with an authenticated GitHub CLI session:
 
 ```powershell
-gh repo clone dlprentice/img2threejs-godot C:\Users\david\source\img2threejs-godot
-git -C C:\Users\david\source\img2threejs-godot remote set-url origin https://github.com/dlprentice/img2threejs-godot.git
-git -C C:\Users\david\source\img2threejs-godot remote add upstream https://github.com/img2threejs/img2threejs.git
-git -C C:\Users\david\source\img2threejs-godot fetch --prune origin
-git -C C:\Users\david\source\img2threejs-godot fetch --prune upstream
-git -C C:\Users\david\source\img2threejs-godot switch -c feat/blender-godot-asset-forge d6673386f89673a58736f8d398dd16ece67874f5
+gh repo clone dlprentice/img2threejs-godot <WORKSPACE_ROOT>\img2threejs-godot
+git -C <WORKSPACE_ROOT>\img2threejs-godot remote set-url origin https://github.com/dlprentice/img2threejs-godot.git
+git -C <WORKSPACE_ROOT>\img2threejs-godot remote add upstream https://github.com/img2threejs/img2threejs.git
+git -C <WORKSPACE_ROOT>\img2threejs-godot fetch --prune origin
+git -C <WORKSPACE_ROOT>\img2threejs-godot fetch --prune upstream
+git -C <WORKSPACE_ROOT>\img2threejs-godot switch -c feat/blender-godot-asset-forge d6673386f89673a58736f8d398dd16ece67874f5
 ```
 
 If `upstream` already exists, use `remote set-url` instead of `remote add`. Verify before work:
 
 ```powershell
-git -C C:\Users\david\source\img2threejs-godot remote -v
-git -C C:\Users\david\source\img2threejs-godot rev-parse HEAD
-git -C C:\Users\david\source\img2threejs-godot status --short --branch
+git -C <WORKSPACE_ROOT>\img2threejs-godot remote -v
+git -C <WORKSPACE_ROOT>\img2threejs-godot rev-parse HEAD
+git -C <WORKSPACE_ROOT>\img2threejs-godot status --short --branch
 ```

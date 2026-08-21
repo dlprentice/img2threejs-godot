@@ -199,6 +199,7 @@ def adapt_object_sculpt_spec(spec_path: Path, *, reject_warnings: bool = True) -
                 "level": 1,
                 "distanceMeters": float(far_lod["distance"]),
                 "targetRatio": float(far_lod["targetRatio"]),
+                "screenSizeThreshold": 0.25,
                 "sourceNodeIds": list(far_lod["componentRefs"]),
             }
         ],

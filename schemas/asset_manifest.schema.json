@@ -97,6 +97,16 @@
         "backend",
         "upstreamRepository",
         "upstreamBaselineSha",
+        "attemptId",
+        "generatorCommitSha",
+        "generatorTreeDirty",
+        "controlPlaneCommitSha",
+        "sharedToolchainCommitSha",
+        "controlPlaneTreeDirty",
+        "sharedToolchainTreeDirty",
+        "constructiveGraphSha256",
+        "buildCommandDigest",
+        "reproducibleBuildEpoch",
         "seed",
         "toolVersions"
       ],
@@ -117,6 +127,38 @@
         },
         "upstreamBaselineSha": {
           "$ref": "#/$defs/gitSha"
+        },
+        "attemptId": {
+          "type": "string",
+          "pattern": "^attempt-[0-9a-f-]{36}$"
+        },
+        "generatorCommitSha": {
+          "$ref": "#/$defs/gitSha"
+        },
+        "generatorTreeDirty": {
+          "type": "boolean"
+        },
+        "controlPlaneCommitSha": {
+          "oneOf": [{ "$ref": "#/$defs/gitSha" }, { "type": "null" }]
+        },
+        "sharedToolchainCommitSha": {
+          "oneOf": [{ "$ref": "#/$defs/gitSha" }, { "type": "null" }]
+        },
+        "controlPlaneTreeDirty": {
+          "type": ["boolean", "null"]
+        },
+        "sharedToolchainTreeDirty": {
+          "type": ["boolean", "null"]
+        },
+        "constructiveGraphSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "buildCommandDigest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "reproducibleBuildEpoch": {
+          "type": ["integer", "null"],
+          "minimum": 0
         },
         "seed": {
           "type": "integer",
@@ -300,8 +342,8 @@
     "relativePath": {
       "type": "string",
       "minLength": 1,
-      "pattern": "^(?!/)(?![A-Za-z]:).+",
-      "description": "Portable path relative to the manifest directory. Runtime validation must also reject backslashes and parent traversal."
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+",
+      "description": "Portable POSIX path relative to the manifest directory; drive paths, backslashes, and parent traversal are forbidden."
     },
     "axis": {
       "enum": ["+X", "-X", "+Y", "-Y", "+Z", "-Z"]
@@ -368,7 +410,9 @@
             "texture",
             "godot-scene",
             "preview-render",
-            "validation-report"
+            "validation-report",
+            "constructive-graph",
+            "process-log"
           ]
         },
         "path": {
@@ -619,7 +663,7 @@
     "collisionShape": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "nodeId", "type", "transform", "isTrigger", "layerRoles"],
+      "required": ["id", "nodeId", "type", "transform", "gltfNodeIndex", "isTrigger", "layerRoles"],
       "properties": {
         "id": {
           "$ref": "#/$defs/id"
@@ -632,6 +676,10 @@
         },
         "transform": {
           "$ref": "#/$defs/transform"
+        },
+        "gltfNodeIndex": {
+          "type": "integer",
+          "minimum": 0
         },
         "dimensions": {
           "$ref": "#/$defs/vec3"
@@ -662,7 +710,7 @@
     "pivot": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "nodeId", "purpose", "transform"],
+      "required": ["id", "nodeId", "purpose", "transform", "gltfNodeIndex"],
       "properties": {
         "id": {
           "$ref": "#/$defs/id"
@@ -675,13 +723,17 @@
         },
         "transform": {
           "$ref": "#/$defs/transform"
+        },
+        "gltfNodeIndex": {
+          "type": "integer",
+          "minimum": 0
         }
       }
     },
     "socket": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "parentNodeId", "purpose", "transform", "tags"],
+      "required": ["id", "parentNodeId", "purpose", "transform", "gltfNodeIndex", "tags"],
       "properties": {
         "id": {
           "$ref": "#/$defs/id"
@@ -695,6 +747,10 @@
         },
         "transform": {
           "$ref": "#/$defs/transform"
+        },
+        "gltfNodeIndex": {
+          "type": "integer",
+          "minimum": 0
         },
         "tags": {
           "type": "array",
@@ -1005,7 +1061,7 @@
     "visualReviewResult": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "profile", "status", "reviewedAt", "views", "scores", "action"],
+      "required": ["id", "profile", "status", "reviewedAt", "reviewer", "reviewerModel", "reviewerVersion", "policyVersion", "viewSha256", "imageDimensions", "views", "scores", "action"],
       "properties": {
         "id": {
           "$ref": "#/$defs/id"
@@ -1018,6 +1074,33 @@
         },
         "reviewedAt": {
           "$ref": "#/$defs/timestamp"
+        },
+        "reviewer": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reviewerModel": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reviewerVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policyVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "viewSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "imageDimensions": {
+          "type": "array",
+          "prefixItems": [
+            { "type": "integer", "minimum": 1 },
+            { "type": "integer", "minimum": 1 }
+          ],
+          "items": false
         },
         "views": {
           "type": "array",
@@ -1127,7 +1210,7 @@
     "godotPackaging": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["godotVersion", "status", "scenePath", "wrapperKind", "importMessages"],
+      "required": ["godotVersion", "status", "scenePath", "wrapperKind", "attemptId", "validationInputManifestSha256", "validationNonce", "importMessages"],
       "properties": {
         "godotVersion": {
           "type": "string",
@@ -1141,6 +1224,17 @@
         },
         "wrapperKind": {
           "enum": ["inherited", "wrapper"]
+        },
+        "attemptId": {
+          "type": "string",
+          "pattern": "^attempt-[0-9a-f-]{36}$"
+        },
+        "validationInputManifestSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "validationNonce": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
         },
         "importMessages": {
           "type": "array",

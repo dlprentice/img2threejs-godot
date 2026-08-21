@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,6 +10,8 @@ from pathlib import Path
 from backends.blender.examples.armored_vehicle_spec import make_armored_vehicle_spec
 from backends.blender.runtime.graph import validate_graph
 from backends.blender.runtime.intake import adapt_object_sculpt_spec
+from backends.blender.runtime.path_safety import safe_asset_path
+from backends.blender.runtime.run_backend import _refuse_preexisting_outputs, _run_blender
 from forge.stage2_spec.validate_sculpt_spec import validate_spec
 
 
@@ -62,6 +65,39 @@ class ArmoredVehicleGraphTests(unittest.TestCase):
         errors = validate_graph(graph)
         self.assertTrue(any("unit vector" in error for error in errors))
         self.assertTrue(any("mirror then bevel" in error for error in errors))
+
+    def test_unknown_modifier_is_a_structured_validation_error(self) -> None:
+        graph = copy.deepcopy(self.graph)
+        graph["nodes"][0]["modifiers"].insert(1, {"operation": "agent_python"})
+        errors = validate_graph(graph)
+        self.assertTrue(any("unsupported" in error for error in errors))
+
+    def test_nonzero_pivot_fails_closed(self) -> None:
+        graph = copy.deepcopy(self.graph)
+        graph["pivots"][0]["translation"] = [0.2, 0.0, 0.0]
+        self.assertTrue(any("nonzero pivot origins are unsupported" in error for error in validate_graph(graph)))
+
+    def test_manifest_paths_cannot_escape_asset_root(self) -> None:
+        root = Path(self.temporary.name)
+        self.assertEqual(root / "evidence" / "rts.png", safe_asset_path(root, "evidence/rts.png"))
+        for unsafe in ("../secret", "/absolute", r"C:\secret", r"..\secret", r"\\server\share"):
+            with self.subTest(unsafe=unsafe), self.assertRaises(ValueError):
+                safe_asset_path(root, unsafe)
+
+    def test_backend_refuses_preexisting_owned_output(self) -> None:
+        output = Path(self.temporary.name) / "output"
+        output.mkdir()
+        (output / "asset.glb").write_bytes(b"stale")
+        with self.assertRaisesRegex(ValueError, "preexisting backend outputs"):
+            _refuse_preexisting_outputs(output)
+
+    def test_backend_process_timeout_is_bounded(self) -> None:
+        with self.assertRaisesRegex(TimeoutError, "process tree was terminated"):
+            _run_blender(
+                [sys.executable, "-c", "import time; time.sleep(30)"],
+                cwd=Path(self.temporary.name),
+                timeout_seconds=1,
+            )
 
     def test_taper_is_not_silently_discarded(self) -> None:
         spec = copy.deepcopy(self.spec)

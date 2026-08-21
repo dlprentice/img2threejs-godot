@@ -23,8 +23,7 @@ def _sha256(path: Path) -> str:
 
 
 def _timestamp() -> str:
-    value = int(os.environ.get("SOURCE_DATE_EPOCH", "0"))
-    return datetime.fromtimestamp(value, timezone.utc).isoformat().replace("+00:00", "Z")
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def _quaternion_from_euler_degrees(values: list[float]) -> list[float]:
@@ -103,7 +102,115 @@ def _mesh_measurements(document: dict[str, Any], binary: bytes, mesh_index: int)
     )
 
 
-def build_manifest(graph: dict[str, Any], glb_path: Path, builder_report: dict[str, Any]) -> dict[str, Any]:
+def _close(left: list[float], right: list[float], tolerance: float = 1e-5) -> bool:
+    return len(left) == len(right) and all(math.isclose(a, b, abs_tol=tolerance, rel_tol=tolerance) for a, b in zip(left, right))
+
+
+def _same_transform(actual: dict[str, Any], expected: dict[str, Any]) -> bool:
+    if not _close(actual["translation"], expected["translation"]) or not _close(actual["scale"], expected["scale"]):
+        return False
+    actual_rotation = actual["rotationQuaternion"]
+    expected_rotation = expected["rotationQuaternion"]
+    return _close(actual_rotation, expected_rotation) or _close(actual_rotation, [-value for value in expected_rotation])
+
+
+def _metadata_nodes(document: dict[str, Any], graph: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    nodes = document.get("nodes", [])
+    parents: dict[int, int] = {}
+    for parent_index, parent in enumerate(nodes):
+        for child_index in parent.get("children", []):
+            parents[int(child_index)] = parent_index
+    measured: dict[str, dict[str, Any]] = {}
+    for node_index, node in enumerate(nodes):
+        extras = node.get("extras", {}) if isinstance(node, dict) else {}
+        kind = extras.get("assetforge_kind")
+        asset_id = extras.get("assetforge_id")
+        if kind not in {"pivot", "socket", "collision"}:
+            continue
+        if not isinstance(asset_id, str) or asset_id in measured:
+            raise ValueError(f"GLB metadata node {node.get('name')!r} has invalid or duplicate assetforge_id")
+        parent_index = parents.get(node_index)
+        if parent_index is None:
+            raise ValueError(f"GLB metadata node {asset_id!r} has no parent")
+        parent_extras = nodes[parent_index].get("extras", {})
+        parent_id = parent_extras.get("assetforge_id") or nodes[parent_index].get("name")
+        measured[asset_id] = {
+            "kind": kind,
+            "gltfNodeIndex": node_index,
+            "parentId": parent_id,
+            "transform": _node_transform(node),
+            "extras": extras,
+        }
+
+    contracts = {
+        "pivot": graph["pivots"],
+        "socket": graph["sockets"],
+        "collision": graph["collisions"],
+    }
+    expected_ids = {value["id"] for values in contracts.values() for value in values}
+    if set(measured) != expected_ids:
+        raise ValueError(f"GLB metadata IDs differ from graph: measured={sorted(measured)} expected={sorted(expected_ids)}")
+    for kind, values in contracts.items():
+        for value in values:
+            item = measured[value["id"]]
+            parent_id = value.get("nodeId", value.get("parentNodeId"))
+            expected_transform = _transform(value["translation"], value.get("rotationDegrees"))
+            if item["kind"] != kind or item["parentId"] != parent_id:
+                raise ValueError(f"GLB metadata relationship differs for {value['id']!r}")
+            if not _same_transform(item["transform"], expected_transform):
+                raise ValueError(f"GLB metadata transform differs for {value['id']!r}")
+            extras = item["extras"]
+            if kind == "pivot" and list(extras.get("axis", [])) != value["axis"]:
+                raise ValueError(f"GLB pivot axis differs for {value['id']!r}")
+            if kind == "socket" and list(extras.get("tags", [])) != value["tags"]:
+                raise ValueError(f"GLB socket tags differ for {value['id']!r}")
+            if kind == "collision":
+                if list(extras.get("dimensions", [])) != value["dimensions"]:
+                    raise ValueError(f"GLB collision dimensions differ for {value['id']!r}")
+                if list(extras.get("layer_roles", [])) != value["layerRoles"]:
+                    raise ValueError(f"GLB collision roles differ for {value['id']!r}")
+    return measured
+
+
+def _material_contracts(document: dict[str, Any], graph: dict[str, Any]) -> list[dict[str, Any]]:
+    measured = {value.get("name"): value for value in document.get("materials", [])}
+    result: list[dict[str, Any]] = []
+    for expected in graph["materials"]:
+        material = measured.get(expected["id"])
+        if not isinstance(material, dict):
+            raise ValueError(f"GLB is missing material {expected['id']!r}")
+        pbr = material.get("pbrMetallicRoughness", {})
+        base_color = [float(value) for value in pbr.get("baseColorFactor", [1.0, 1.0, 1.0, 1.0])]
+        metallic = float(pbr.get("metallicFactor", 1.0))
+        roughness = float(pbr.get("roughnessFactor", 1.0))
+        if not _close(base_color, expected["baseColorFactor"]) or not math.isclose(
+            metallic, expected["metallicFactor"], abs_tol=1e-5
+        ) or not math.isclose(roughness, expected["roughnessFactor"], abs_tol=1e-5):
+            raise ValueError(f"GLB material parameters differ for {expected['id']!r}")
+        result.append(
+            {
+                "id": expected["id"],
+                "name": expected["name"],
+                "model": "pbr-metallic-roughness",
+                "baseColorFactor": base_color,
+                "metallicFactor": metallic,
+                "roughnessFactor": roughness,
+                "doubleSided": bool(material.get("doubleSided", False)),
+                "alphaMode": str(material.get("alphaMode", "OPAQUE")),
+                "textureBindings": [],
+            }
+        )
+    return result
+
+
+def build_manifest(
+    graph: dict[str, Any],
+    glb_path: Path,
+    builder_report: dict[str, Any],
+    *,
+    graph_path: Path,
+    provenance: dict[str, Any],
+) -> dict[str, Any]:
     document, binary, _ = parse_glb(glb_path)
     nodes = document.get("nodes", [])
     materials = document.get("materials", [])
@@ -151,20 +258,8 @@ def build_manifest(graph: dict[str, Any], glb_path: Path, builder_report: dict[s
             raise ValueError(f"LOD1 did not reduce triangles for {source_id!r}")
 
     checked_at = _timestamp()
-    material_contracts = [
-        {
-            "id": value["id"],
-            "name": value["name"],
-            "model": "pbr-metallic-roughness",
-            "baseColorFactor": value["baseColorFactor"],
-            "metallicFactor": value["metallicFactor"],
-            "roughnessFactor": value["roughnessFactor"],
-            "doubleSided": False,
-            "alphaMode": "OPAQUE",
-            "textureBindings": [],
-        }
-        for value in graph["materials"]
-    ]
+    material_contracts = _material_contracts(document, graph)
+    metadata = _metadata_nodes(document, graph)
     lod_contract = graph["lods"][0]
     manifest = {
         "schemaVersion": "asset-manifest.v0",
@@ -177,6 +272,8 @@ def build_manifest(graph: dict[str, Any], glb_path: Path, builder_report: dict[s
             "backend": "blender",
             "upstreamRepository": "img2threejs/img2threejs",
             "upstreamBaselineSha": UPSTREAM_BASELINE,
+            **provenance,
+            "reproducibleBuildEpoch": int(os.environ["SOURCE_DATE_EPOCH"]) if os.environ.get("SOURCE_DATE_EPOCH") else None,
             "seed": 0,
             "toolVersions": {
                 "blender": builder_report["blenderVersion"],
@@ -192,7 +289,10 @@ def build_manifest(graph: dict[str, Any], glb_path: Path, builder_report: dict[s
             "upAxis": "+Y",
         },
         "artifacts": [
-            {"id": "asset-glb", "role": "glb", "path": glb_path.name, "sha256": _sha256(glb_path), "byteSize": glb_path.stat().st_size}
+            {"id": "asset-glb", "role": "glb", "path": glb_path.name, "sha256": _sha256(glb_path), "byteSize": glb_path.stat().st_size},
+            {"id": "constructive-graph", "role": "constructive-graph", "path": graph_path.name, "sha256": _sha256(graph_path), "byteSize": graph_path.stat().st_size},
+            {"id": "blender-stdout", "role": "process-log", "path": "blender.stdout.log", "sha256": _sha256(glb_path.parent / "blender.stdout.log"), "byteSize": (glb_path.parent / "blender.stdout.log").stat().st_size},
+            {"id": "blender-stderr", "role": "process-log", "path": "blender.stderr.log", "sha256": _sha256(glb_path.parent / "blender.stderr.log"), "byteSize": (glb_path.parent / "blender.stderr.log").stat().st_size},
         ],
         "meshNodes": mesh_nodes,
         "materials": material_contracts,
@@ -209,7 +309,7 @@ def build_manifest(graph: dict[str, Any], glb_path: Path, builder_report: dict[s
             {
                 "id": lod_contract["id"],
                 "level": 1,
-                "screenSizeThreshold": float(lod_contract["targetRatio"]),
+                "screenSizeThreshold": float(lod_contract["screenSizeThreshold"]),
                 "distanceMeters": float(lod_contract["distanceMeters"]),
                 "meshNodeIds": [value["id"] for value in by_lod[1]],
                 "triangleCount": lod_triangles[1],
@@ -220,7 +320,8 @@ def build_manifest(graph: dict[str, Any], glb_path: Path, builder_report: dict[s
                 "id": value["id"],
                 "nodeId": value["nodeId"],
                 "type": value["type"],
-                "transform": _transform(value["translation"]),
+                "transform": metadata[value["id"]]["transform"],
+                "gltfNodeIndex": metadata[value["id"]]["gltfNodeIndex"],
                 "dimensions": value["dimensions"],
                 "isTrigger": value["isTrigger"],
                 "layerRoles": value["layerRoles"],
@@ -228,7 +329,7 @@ def build_manifest(graph: dict[str, Any], glb_path: Path, builder_report: dict[s
             for value in graph["collisions"]
         ],
         "pivots": [
-            {"id": value["id"], "nodeId": value["nodeId"], "purpose": value["purpose"], "transform": _transform(value["translation"])}
+            {"id": value["id"], "nodeId": value["nodeId"], "purpose": value["purpose"], "transform": metadata[value["id"]]["transform"], "gltfNodeIndex": metadata[value["id"]]["gltfNodeIndex"]}
             for value in graph["pivots"]
         ],
         "sockets": [
@@ -236,7 +337,8 @@ def build_manifest(graph: dict[str, Any], glb_path: Path, builder_report: dict[s
                 "id": value["id"],
                 "parentNodeId": value["parentNodeId"],
                 "purpose": value["purpose"],
-                "transform": _transform(value["translation"], value["rotationDegrees"]),
+                "transform": metadata[value["id"]]["transform"],
+                "gltfNodeIndex": metadata[value["id"]]["gltfNodeIndex"],
                 "tags": value["tags"],
             }
             for value in graph["sockets"]
@@ -265,7 +367,10 @@ def build_manifest(graph: dict[str, Any], glb_path: Path, builder_report: dict[s
         "licenseAndProvenance": {
             "outputLicense": "Apache-2.0",
             "upstreamLicense": "Apache-2.0",
-            "notices": ["Generic procedural benchmark; no game assets or private references were used."],
+            "notices": [
+                "Generic procedural benchmark; no game assets or private references were used.",
+                "The Blender-executed builder is GPL-3.0-or-later; generated data retains the output license recorded here.",
+            ],
             "sources": [
                 {
                     "type": "specification",
@@ -279,6 +384,13 @@ def build_manifest(graph: dict[str, Any], glb_path: Path, builder_report: dict[s
                     "uri": "https://github.com/img2threejs/img2threejs",
                     "license": "Apache-2.0",
                 },
+                {
+                    "type": "generator",
+                    "identifier": "backends/blender/runtime/blender_build.py",
+                    "uri": "https://github.com/dlprentice/img2threejs-godot",
+                    "license": "GPL-3.0-or-later",
+                    "sha256": _sha256(Path(__file__).with_name("blender_build.py")),
+                },
             ],
         },
         "validationResults": [
@@ -291,7 +403,7 @@ def build_manifest(graph: dict[str, Any], glb_path: Path, builder_report: dict[s
                 "messages": [
                     {"code": "lod-reduced", "severity": "info", "text": f"Measured triangles decreased from {lod_triangles[0]} to {lod_triangles[1]}."}
                 ],
-                "artifactIds": ["asset-glb"],
+                "artifactIds": ["asset-glb", "constructive-graph"],
             }
         ],
         "visualReviewResults": [],

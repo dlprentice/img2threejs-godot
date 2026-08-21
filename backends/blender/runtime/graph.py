@@ -246,7 +246,8 @@ def validate_graph(graph: dict[str, Any]) -> list[str]:
                             errors.append(f"{modifier_label}.axis is unsupported")
                     else:
                         errors.append(f"{modifier_label}.operation is unsupported for {operation}")
-                if modifier_order != sorted(modifier_order, key={"mirror": 0, "bevel": 1}.get):
+                modifier_rank = {"mirror": 0, "bevel": 1}
+                if modifier_order != sorted(modifier_order, key=lambda item: modifier_rank.get(item, 99)):
                     errors.append(f"{label}.modifiers must be ordered mirror then bevel")
 
         roots = [node for node in nodes if isinstance(node, dict) and node.get("parentId") is None]
@@ -262,7 +263,7 @@ def _validate_relationships(graph: dict[str, Any], node_ids: set[str], errors: l
         ("pivots", {"id", "nodeId", "purpose", "translation", "axis"}),
         ("sockets", {"id", "parentNodeId", "purpose", "translation", "rotationDegrees", "tags"}),
         ("collisions", {"id", "nodeId", "type", "translation", "dimensions", "isTrigger", "layerRoles"}),
-        ("lods", {"id", "level", "distanceMeters", "targetRatio", "sourceNodeIds"}),
+        ("lods", {"id", "level", "distanceMeters", "targetRatio", "screenSizeThreshold", "sourceNodeIds"}),
     )
     material_ids = {
         value.get("id")
@@ -295,7 +296,10 @@ def _validate_relationships(graph: dict[str, Any], node_ids: set[str], errors: l
             if node_reference is not None and node_reference not in node_ids:
                 errors.append(f"{label} references unknown node {node_reference!r}")
             if collection_name == "pivots":
-                _vec3(value.get("translation"), f"{label}.translation", errors)
+                if _vec3(value.get("translation"), f"{label}.translation", errors) and any(
+                    not math.isclose(float(item), 0.0, abs_tol=1e-9) for item in value["translation"]
+                ):
+                    errors.append(f"{label}.translation must be zero; nonzero pivot origins are unsupported in graph v0")
                 axis = value.get("axis")
                 if _vec3(axis, f"{label}.axis", errors):
                     length = math.sqrt(sum(float(item) ** 2 for item in axis))
@@ -330,6 +334,16 @@ def _validate_relationships(graph: dict[str, Any], node_ids: set[str], errors: l
                 if _finite_number(ratio, f"{label}.targetRatio", errors, minimum=0, maximum=1, exclusive_minimum=True):
                     if float(ratio) >= 1:
                         errors.append(f"{label}.targetRatio must be < 1")
+                threshold = value.get("screenSizeThreshold")
+                if _finite_number(
+                    threshold,
+                    f"{label}.screenSizeThreshold",
+                    errors,
+                    minimum=0,
+                    maximum=1,
+                    exclusive_minimum=True,
+                ) and float(threshold) >= 1:
+                    errors.append(f"{label}.screenSizeThreshold must be < 1")
                 source_ids = value.get("sourceNodeIds")
                 if not isinstance(source_ids, list) or not source_ids or any(item not in node_ids for item in source_ids):
                     errors.append(f"{label}.sourceNodeIds must reference existing nodes")

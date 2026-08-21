@@ -8,15 +8,14 @@ authority.
 
 ## Responsibilities
 
-- Import GLB and capture every warning and error.
-- Verify metric scale, bounds, forward/up axes, ground placement, hierarchy, and material bindings.
-- Generate an inherited scene when possible, otherwise a minimal wrapper scene.
-- Map collision records, LODs, pivots, and sockets to stable Godot nodes/resources.
-- Support declarative faction material overrides and VFX scene attachment by generic role.
-- Apply navigation metadata without embedding game-specific navigation layers in this public fork.
-- Produce neutral, RTS, and isometric preview scenes with versioned camera/render profiles.
-- Capture rendering correctness, draw calls, and frame-time evidence.
-- Emit a machine-readable packaging/validation result for the manifest.
+- Build a new temporary project per attempt from only `project.godot`, `main.gd`, and `main.tscn`.
+- Correlate outputs to the attempt, GLB hash, input-manifest hash, and a generated nonce.
+- Preserve import/render stdout and stderr; fail errors and non-allowlisted warnings.
+- Verify metric scale, bounds, forward/up axes, ground placement, hierarchy, local/world transforms,
+  material bindings, socket and pivot transforms, collision raycast behavior, and explicit LOD switching.
+- Render the RTS view, a stage-only baseline, an isolated asset mask, and per-component visibility probes.
+- Decode, freshness-check, and hash every accepted PNG before copying it into attempt evidence.
+- Emit a machine-readable packaging/validation result and actual import diagnostics for the manifest.
 
 ## Boundaries
 
@@ -39,17 +38,19 @@ Given an artifact directory containing `asset.glb` and `asset_manifest.json`:
 python integrations/godot/run_validation.py --artifact-dir runtime/armored-vehicle
 ```
 
-The runner copies only the required inputs into a disposable validation project, performs a Godot
+The runner copies only the required inputs into a newly created disposable validation project, performs a Godot
 editor import pass, then renders through Forward+ to `rts.png`. It verifies required mesh, pivot,
-socket, collider, and LOD identifiers; hides the far-LOD meshes for the near view; records renderer
-and adapter identity, draw calls, CPU frame samples, and image-content metrics; and fails a blank or
-low-contrast capture.
+socket, collider, and LOD semantics; exercises both LOD levels; records renderer and adapter
+identity, draw calls, CPU frame samples, and asset-specific pixel metrics; and fails when the asset
+or any mandatory component contributes insufficient visible pixels.
 
 Godot 4.7.1's official runtime exposed no `RenderingDevice` GPU timestamp samples in the benchmark
 environment. The report therefore records GPU timing as explicitly unavailable rather than
 substituting CPU time. Host-wide GPU-memory sampling belongs to the private scheduler, not this
 generic adapter.
 
-The current implementation validates one generic RTS hard-surface profile. It does not install an
+The current implementation validates one generic RTS hard-surface profile and uses an explicit
+wrapper visibility policy for LOD switching rather than Godot distance-based LOD. Graph v0 rejects
+nonzero pivot origins instead of claiming arbitrary-pivot support. It does not install an
 asset into a game, add gameplay behavior, or claim support for isometric, organic, rigged, textured,
 or destructible assets.
