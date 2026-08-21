@@ -1,10 +1,9 @@
-# Blender backend contract
+# Blender backend
 
-Status: design scaffold only. No Blender backend is implemented by this bootstrap.
-
-This backend will interpret a validated, constrained constructive scene graph and emit a GLB plus
-an engine-neutral `asset_manifest.json`. It must not accept agent-authored Python or arbitrary
-`bpy` fragments.
+Status: experimental vertical slice implemented and benchmarked. It converts a validated
+`ObjectSculptSpec` into a closed constructive graph, runs a fixed Blender script headlessly, and
+emits a GLB plus an engine-neutral `asset_manifest.json`. It never evaluates Python or arbitrary
+`bpy` fragments from input data.
 
 ## Initial constructor allow-list
 
@@ -17,8 +16,9 @@ an engine-neutral `asset_manifest.json`. It must not accept agent-authored Pytho
 - pivot
 - collision proxy
 
-Lathe, extrusion, curve sweep, array, boolean cut, panel inset, decal plane, UV processing, and LOD
-generation may be added only when a benchmark requires them and focused tests cover them.
+The implemented slice also creates a measured reduced LOD with Blender's decimator. Lathe,
+extrusion, curve sweep, array, boolean cut, panel inset, decal planes, and general UV processing
+remain unsupported and fail closed.
 
 ## Execution contract
 
@@ -46,5 +46,41 @@ generation may be added only when a benchmark requires them and focused tests co
 Paths in the manifest are relative to its directory. The manifest must validate against
 `schemas/asset_manifest.schema.json` and contain no executable payload.
 
-The first implementation task is an armored-vehicle blockout using rounded boxes and cylinders,
-with one collider, one pivot, two sockets, one reduced LOD, GLB export, and manifest generation.
+## Armored-vehicle proof
+
+From the repository root:
+
+```powershell
+python -m backends.blender.examples.armored_vehicle_spec --out runtime/vehicle.input.spec.json
+python -m backends.blender.runtime.run_backend `
+  --spec runtime/vehicle.input.spec.json `
+  --output runtime/armored-vehicle
+```
+
+Set `BLENDER_EXECUTABLE` when Blender is not installed at the default Windows location. The proof
+produces a three-part hull/turret/weapon hierarchy, one collider, one rotation pivot, two sockets,
+one painted-metal material, and a 50% triangle-count far LOD. Geometry dimensions are baked while
+node scale remains identity. The manifest's bounds, node indices, triangle counts, and hashes are
+read from the exported GLB rather than predicted.
+
+Validate the graph and manifest with:
+
+```powershell
+uv run --with jsonschema==4.25.1 python scripts/validate-json-schema.py `
+  backends/blender/schema/constructive_graph.schema.json `
+  runtime/armored-vehicle/constructive_graph.json
+uv run --with jsonschema==4.25.1 python scripts/validate-json-schema.py `
+  schemas/asset_manifest.schema.json `
+  runtime/armored-vehicle/asset_manifest.json
+```
+
+Run the focused suite with:
+
+```powershell
+python -m unittest backends.blender.tests.test_graph
+python -m unittest backends.blender.tests.test_blender_integration
+```
+
+This is a hard-surface blockout proof, not a general asset generator or production-readiness
+claim. Promotion still requires broader unattended batches, visual review, licensing, and
+game-specific validation outside this public repository.

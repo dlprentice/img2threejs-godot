@@ -1,7 +1,6 @@
-# Godot integration contract
+# Godot integration
 
-Status: design scaffold only. No Godot importer or scene generator is implemented by this
-bootstrap.
+Status: experimental isolated validator implemented and benchmarked with Godot 4.7.1.
 
 The integration consumes a validated GLB and `asset_manifest.json` in an isolated validation
 project. Godot's imported scene and gameplay-camera render are the final technical and visual
@@ -31,3 +30,26 @@ authority.
 Private project tooling may map generic roles such as `selection_origin`, `primary_weapon`,
 `muzzle_vfx`, `faction_surface`, and `navigation_obstacle` to a game's conventions after the public
 benchmark gate passes.
+
+## Run the isolated proof
+
+Given an artifact directory containing `asset.glb` and `asset_manifest.json`:
+
+```powershell
+python integrations/godot/run_validation.py --artifact-dir runtime/armored-vehicle
+```
+
+The runner copies only the required inputs into a disposable validation project, performs a Godot
+editor import pass, then renders through Forward+ to `rts.png`. It verifies required mesh, pivot,
+socket, collider, and LOD identifiers; hides the far-LOD meshes for the near view; records renderer
+and adapter identity, draw calls, CPU frame samples, and image-content metrics; and fails a blank or
+low-contrast capture.
+
+Godot 4.7.1's official runtime exposed no `RenderingDevice` GPU timestamp samples in the benchmark
+environment. The report therefore records GPU timing as explicitly unavailable rather than
+substituting CPU time. Host-wide GPU-memory sampling belongs to the private scheduler, not this
+generic adapter.
+
+The current implementation validates one generic RTS hard-surface profile. It does not install an
+asset into a game, add gameplay behavior, or claim support for isometric, organic, rigged, textured,
+or destructible assets.
