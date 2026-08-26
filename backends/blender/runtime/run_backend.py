@@ -132,6 +132,19 @@ def _clean_failed_outputs(output_directory: Path) -> None:
             temporary.unlink(missing_ok=True)
 
 
+def _validate_attempt_id(attempt_id: str) -> str:
+    prefix = "attempt-"
+    if not isinstance(attempt_id, str) or not attempt_id.startswith(prefix):
+        raise ValueError("attempt_id must use attempt-<UUID> format")
+    try:
+        parsed = uuid.UUID(attempt_id[len(prefix) :])
+    except ValueError as error:
+        raise ValueError("attempt_id must use attempt-<UUID> format") from error
+    if attempt_id != prefix + str(parsed):
+        raise ValueError("attempt_id must use canonical lowercase attempt-<UUID> format")
+    return attempt_id
+
+
 def run(
     spec_path: Path,
     output_directory: Path,
@@ -150,7 +163,7 @@ def run(
         raise ValueError(f"specification does not exist: {spec_path}")
     output_directory.mkdir(parents=True, exist_ok=True)
     _refuse_preexisting_outputs(output_directory)
-    attempt_id = attempt_id or f"attempt-{uuid.uuid4()}"
+    attempt_id = _validate_attempt_id(attempt_id or f"attempt-{uuid.uuid4()}")
     repository_root = Path(__file__).resolve().parents[3]
     generator_commit_sha, generator_tree_dirty = _git_identity(repository_root)
     source_copy = output_directory / "source.spec.json"

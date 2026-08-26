@@ -11,7 +11,7 @@ from backends.blender.examples.armored_vehicle_spec import make_armored_vehicle_
 from backends.blender.runtime.graph import validate_graph
 from backends.blender.runtime.intake import adapt_object_sculpt_spec
 from backends.blender.runtime.path_safety import safe_asset_path
-from backends.blender.runtime.run_backend import _refuse_preexisting_outputs, _run_blender
+from backends.blender.runtime.run_backend import _refuse_preexisting_outputs, _run_blender, _validate_attempt_id
 from forge.stage2_spec.validate_sculpt_spec import validate_spec
 
 
@@ -98,6 +98,12 @@ class ArmoredVehicleGraphTests(unittest.TestCase):
                 cwd=Path(self.temporary.name),
                 timeout_seconds=1,
             )
+
+    def test_backend_rejects_attempt_id_that_cannot_satisfy_manifest_contract(self) -> None:
+        with self.assertRaisesRegex(ValueError, "attempt-<UUID>"):
+            _validate_attempt_id("public-final-readable-label")
+        attempt_id = "attempt-12345678-1234-5678-9abc-1234567890ab"
+        self.assertEqual(attempt_id, _validate_attempt_id(attempt_id))
 
     def test_taper_is_not_silently_discarded(self) -> None:
         spec = copy.deepcopy(self.spec)

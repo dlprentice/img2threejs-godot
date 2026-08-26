@@ -276,7 +276,7 @@ def run(
     manifest_attempt = source_manifest.get("generator", {}).get("attemptId")
     attempt_id = attempt_id or manifest_attempt
     if not isinstance(attempt_id, str) or not attempt_id.startswith("attempt-"):
-        raise ValueError("attempt_id must be supplied by the manifest or command line")
+        raise ValueError("attempt_id must be supplied in attempt-<UUID> format by the manifest or command line")
     if manifest_attempt is not None and manifest_attempt != attempt_id:
         raise ValueError("attempt_id does not match the generator manifest")
 
