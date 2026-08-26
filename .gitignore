@@ -39,7 +39,7 @@ assets/*
 # Sponsor brand marks are referenced by the README, so they ship too.
 !assets/sponsors/
 openspec/
-runtime/
+/runtime/
 
 # Run-time capture output: review renders, focus shots, comparison sheets.
 # These are produced by every capture and gate run, are large, and are never inputs to a build.

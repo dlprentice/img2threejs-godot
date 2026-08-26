@@ -81,6 +81,14 @@ class CliArgumentError(ValueError):
     pass
 
 
+def _configure_utf8_stdio() -> None:
+    """Keep the CLI's Unicode contract independent of the Windows code page."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            reconfigure(encoding="utf-8", errors="strict")
+
+
 class CliNamespace(argparse.Namespace):
     def __init__(self) -> None:
         super().__init__()
@@ -255,4 +263,5 @@ def main(argv: Sequence[str]) -> int:
 
 
 if __name__ == "__main__":
+    _configure_utf8_stdio()
     raise SystemExit(main(sys.argv[1:]))

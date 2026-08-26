@@ -315,4 +315,5 @@ Contributions are welcome — procedural material recipes, new gates, host cover
 
 ## License
 
-Apache License 2.0. See [LICENSE](LICENSE).
+Most repository source is Apache License 2.0. The Blender-executed build script is
+GPL-3.0-or-later; see [MIXED_LICENSES.md](MIXED_LICENSES.md) for the exact file boundary.

@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dlprentice/img2threejs-godot/backends/blender/schema/constructive_graph.schema.json",
+  "title": "Constrained Constructive Graph",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "asset", "sourceSpecification", "coordinateSystem", "materials", "nodes", "pivots", "sockets", "collisions", "lods"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "displayName"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "version": {"type": "string", "minLength": 1},
+        "displayName": {"type": "string", "minLength": 1}
+      }
+    },
+    "sourceSpecification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "schemaVersion"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "schemaVersion": {"type": "string", "minLength": 1}
+      }
+    },
+    "coordinateSystem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit", "handedness", "forwardAxis", "upAxis"],
+      "properties": {
+        "unit": {"const": "meter"},
+        "handedness": {"const": "right"},
+        "forwardAxis": {"const": [0, 0, 1]},
+        "upAxis": {"const": [0, 1, 0]}
+      }
+    },
+    "materials": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/material"}},
+    "nodes": {"type": "array", "minItems": 1, "items": {"oneOf": [{"$ref": "#/$defs/roundedBox"}, {"$ref": "#/$defs/cylinder"}]}},
+    "pivots": {"type": "array", "items": {"$ref": "#/$defs/pivot"}},
+    "sockets": {"type": "array", "items": {"$ref": "#/$defs/socket"}},
+    "collisions": {"type": "array", "items": {"$ref": "#/$defs/collision"}},
+    "lods": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/lod"}}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$"},
+    "vec3": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}},
+    "transform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["translation", "rotationDegrees", "scale"],
+      "properties": {
+        "translation": {"$ref": "#/$defs/vec3"},
+        "rotationDegrees": {"$ref": "#/$defs/vec3"},
+        "scale": {"$ref": "#/$defs/vec3"}
+      }
+    },
+    "material": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "baseColorFactor", "metallicFactor", "roughnessFactor"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "name": {"type": "string", "minLength": 1},
+        "baseColorFactor": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"type": "number", "minimum": 0, "maximum": 1}},
+        "metallicFactor": {"type": "number", "minimum": 0, "maximum": 1},
+        "roughnessFactor": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "nodeBase": {
+      "type": "object",
+      "required": ["id", "name", "sourceComponentId", "parentId", "operation", "transform", "materialId"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "name": {"type": "string", "minLength": 1},
+        "sourceComponentId": {"$ref": "#/$defs/id"},
+        "parentId": {"type": ["string", "null"], "pattern": "^[a-z][a-z0-9_-]{0,63}$"},
+        "operation": {"enum": ["rounded_box", "cylinder"]},
+        "transform": {"$ref": "#/$defs/transform"},
+        "materialId": {"$ref": "#/$defs/id"}
+      }
+    },
+    "bevel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation", "width", "segments"],
+      "properties": {
+        "operation": {"const": "bevel"},
+        "width": {"type": "number", "minimum": 0, "maximum": 1},
+        "segments": {"type": "integer", "minimum": 1, "maximum": 6}
+      }
+    },
+    "mirror": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation", "axis"],
+      "properties": {
+        "operation": {"const": "mirror"},
+        "axis": {"enum": ["X", "Y", "Z"]}
+      }
+    },
+    "roundedBox": {
+      "allOf": [
+        {"$ref": "#/$defs/nodeBase"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "name", "sourceComponentId", "parentId", "operation", "transform", "materialId", "size", "modifiers"],
+          "properties": {
+            "id": {"$ref": "#/$defs/id"},
+            "name": {"type": "string"},
+            "sourceComponentId": {"$ref": "#/$defs/id"},
+            "parentId": {"type": ["string", "null"]},
+            "operation": {"const": "rounded_box"},
+            "transform": {"$ref": "#/$defs/transform"},
+            "materialId": {"$ref": "#/$defs/id"},
+            "size": {"$ref": "#/$defs/vec3"},
+            "modifiers": {"type": "array", "items": {"oneOf": [{"$ref": "#/$defs/mirror"}, {"$ref": "#/$defs/bevel"}]}}
+          }
+        }
+      ]
+    },
+    "cylinder": {
+      "allOf": [
+        {"$ref": "#/$defs/nodeBase"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "name", "sourceComponentId", "parentId", "operation", "transform", "materialId", "radius", "depth", "vertices", "axis", "originAtStart", "modifiers"],
+          "properties": {
+            "id": {"$ref": "#/$defs/id"},
+            "name": {"type": "string"},
+            "sourceComponentId": {"$ref": "#/$defs/id"},
+            "parentId": {"type": ["string", "null"]},
+            "operation": {"const": "cylinder"},
+            "transform": {"$ref": "#/$defs/transform"},
+            "materialId": {"$ref": "#/$defs/id"},
+            "radius": {"type": "number", "exclusiveMinimum": 0},
+            "depth": {"type": "number", "exclusiveMinimum": 0},
+            "vertices": {"type": "integer", "minimum": 8, "maximum": 64},
+            "axis": {"enum": ["X", "-X", "Y", "-Y", "Z", "-Z"]},
+            "originAtStart": {"type": "boolean"},
+            "modifiers": {"type": "array", "items": {"$ref": "#/$defs/bevel"}}
+          }
+        }
+      ]
+    },
+    "pivot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "nodeId", "purpose", "translation", "axis"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "nodeId": {"$ref": "#/$defs/id"},
+        "purpose": {"type": "string", "minLength": 1},
+        "translation": {"$ref": "#/$defs/vec3"},
+        "axis": {"$ref": "#/$defs/vec3"}
+      }
+    },
+    "socket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "parentNodeId", "purpose", "translation", "rotationDegrees", "tags"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "parentNodeId": {"$ref": "#/$defs/id"},
+        "purpose": {"type": "string", "minLength": 1},
+        "translation": {"$ref": "#/$defs/vec3"},
+        "rotationDegrees": {"$ref": "#/$defs/vec3"},
+        "tags": {"type": "array", "items": {"$ref": "#/$defs/id"}}
+      }
+    },
+    "collision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "nodeId", "type", "translation", "dimensions", "isTrigger", "layerRoles"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "nodeId": {"$ref": "#/$defs/id"},
+        "type": {"const": "box"},
+        "translation": {"$ref": "#/$defs/vec3"},
+        "dimensions": {"$ref": "#/$defs/vec3"},
+        "isTrigger": {"const": false},
+        "layerRoles": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/id"}}
+      }
+    },
+    "lod": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "level", "distanceMeters", "targetRatio", "screenSizeThreshold", "sourceNodeIds"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "level": {"const": 1},
+        "distanceMeters": {"type": "number", "exclusiveMinimum": 0},
+        "targetRatio": {"type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 1},
+        "screenSizeThreshold": {"type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 1},
+        "sourceNodeIds": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/id"}}
+      }
+    }
+  }
+}

@@ -1,0 +1,5 @@
+.godot/
+imports/current/*
+!imports/current/.gitkeep
+evidence/current/*
+!evidence/current/.gitkeep
