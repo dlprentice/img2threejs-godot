@@ -1,8 +1,13 @@
 # Shared project instructions
 
-This repository is the canonical source for the `img2threejs` skill. Host entrypoints
-(`~/.claude/skills/img2threejs`, `~/.codex/skills/img2threejs`) should be symlinks to one checkout —
-never independent copies, or the two hosts drift apart silently.
+Read the applicable workspace contract at [`../../AGENTS.md`](../../AGENTS.md)
+before working in this repository.
+
+This repository at `~/Projects/game-dev/img2threejs-godot` is the canonical
+source for the `img2threejs` skill. The host entrypoints
+`~/.claude/skills/img2threejs` and `~/.codex/skills/img2threejs` are absent after
+the Omarchy migration. If the skill is installed later, both entrypoints must be
+symlinks to this one checkout—never independent copies—or the hosts will drift.
 
 ## Change rules
 
