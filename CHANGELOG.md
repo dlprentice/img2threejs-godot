@@ -5,6 +5,12 @@ All notable changes to **img2threejs** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased — fork integrations
+
+### Fixed
+- Resolve the Godot validator from `--godot`, `GODOT_EXECUTABLE`, or the installed standard `godot`.
+- Keep validation scratch on disk under `/var/tmp` and render at 960x540 when the window is resized.
+
 ## [1.4.4-beta.2]
 
 ### Added

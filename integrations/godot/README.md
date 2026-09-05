@@ -1,6 +1,6 @@
 # Godot integration
 
-Status: experimental isolated validator implemented and benchmarked with Godot 4.7.1.
+Status: experimental isolated validator; Linux import and rendering verified with Godot 4.7.2.
 
 The integration consumes a validated GLB and `asset_manifest.json` in an isolated validation
 project. Godot's imported scene and gameplay-camera render are the final technical and visual
@@ -34,9 +34,14 @@ benchmark gate passes.
 
 Given an artifact directory containing `asset.glb` and `asset_manifest.json`:
 
-```powershell
-python integrations/godot/run_validation.py --artifact-dir runtime/armored-vehicle
+```bash
+python3 integrations/godot/run_validation.py --artifact-dir /absolute/path/to/artifact
 ```
+
+The runner uses `--godot` when supplied, then `GODOT_EXECUTABLE`, then `godot` on PATH. This
+GDScript validation project uses the standard Godot build. Temporary projects live under `/var/tmp`
+and are removed on exit; completed outputs stay in the supplied artifact directory. The viewport
+renders at 960x540 even when a tiling compositor resizes the window.
 
 The runner copies only the required inputs into a newly created disposable validation project, performs a Godot
 editor import pass, then renders through Forward+ to `rts.png`. It verifies required mesh, pivot,

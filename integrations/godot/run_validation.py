@@ -23,7 +23,6 @@ if str(REPOSITORY_ROOT) not in sys.path:
 from backends.blender.runtime.path_safety import safe_asset_path
 
 
-DEFAULT_WINDOWS_GODOT = Path(r"C:\Tools\Godot\bin\Godot_console.exe")
 PROJECT_SOURCE = Path(__file__).with_name("validation_project")
 PROJECT_FILES = ("project.godot", "main.gd", "main.tscn")
 EVIDENCE_NAMES = ("godot_validation.json", "rts.png", "rts_without_asset.png", "asset_mask.png")
@@ -266,7 +265,10 @@ def run(
     if not glb_path.is_file() or not manifest_path.is_file():
         raise ValueError("artifact directory must contain asset.glb and asset_manifest.json")
     _refuse_preexisting_outputs(artifact_directory)
-    executable = (godot or DEFAULT_WINDOWS_GODOT).expanduser().resolve()
+    godot_command = godot or os.environ.get("GODOT_EXECUTABLE") or shutil.which("godot")
+    if not godot_command:
+        raise ValueError("Godot was not found; set GODOT_EXECUTABLE or pass --godot")
+    executable = Path(godot_command).expanduser().resolve()
     if not executable.is_file() and _runner is None:
         raise ValueError(f"Godot executable does not exist: {executable}")
     source_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -291,7 +293,7 @@ def run(
         "sabotage": _sabotage,
     }
     import_messages: list[dict[str, str]] = []
-    with tempfile.TemporaryDirectory(prefix="assetforge-godot-") as temporary_name:
+    with tempfile.TemporaryDirectory(prefix="assetforge-godot-", dir="/var/tmp") as temporary_name:
         project = Path(temporary_name) / "validation_project"
         project.mkdir()
         for name in PROJECT_FILES:

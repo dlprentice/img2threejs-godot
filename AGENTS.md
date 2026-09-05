@@ -64,7 +64,6 @@ implementation claims and completion:
 
 ## Gotchas
 
-- `integrations/godot/run_validation.py` defaults (line 26) to `C:\Tools\Godot\bin\Godot_console.exe`; it takes
-  `--godot` but has no `GODOT_EXECUTABLE` fallback, and `../game-asset-factory`'s `benchmark.py` runs
-  `validate-gltf.ps1` through `pwsh`, so the cross-repo route does not complete on Linux yet
-  (`~/Projects/game-dev/PLAN.md` 3.2). The Windows default is history, not routing.
+- `integrations/godot/run_validation.py` resolves `--godot`, then `GODOT_EXECUTABLE`, then standard `godot`
+  on PATH. Its disposable project uses `/var/tmp`; its 960x540 viewport is independent of compositor window
+  sizing. `../game-asset-factory`'s benchmark calls the shared native `validate-gltf.sh` entrypoint.
