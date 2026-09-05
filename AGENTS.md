@@ -1,6 +1,7 @@
 # img2threejs-godot: agent guide
 
 Read this before changing anything. It is the only instruction file in the repo; `CLAUDE.md` just points here.
+Read [folder rules](../AGENTS.md), [project-tree rules](../../AGENTS.md), and [machine rules](../../../AGENTS.md) first.
 Machine-wide rules are in `~/AGENTS.md`; the folder rules are in `~/Projects/game-dev/AGENTS.md`.
 
 ## What this is
@@ -14,15 +15,16 @@ spec, build, review, rig; tests in `forge/tests/`), `grimoire/` the routed refer
 branches mirrored on `origin` stay: never delete branches here. Keeping the whole fork or extracting the additions
 into a small repo of David's own is his open decision (`~/Projects/game-dev/PLAN.md` section 4).
 
-The host entrypoints `~/.claude/skills/img2threejs` and `~/.codex/skills/img2threejs` are absent after the Omarchy
-migration. If the skill is installed later, both entrypoints must be symlinks to this one checkout, never
-independent copies, or the hosts will drift.
+Agent tool homes are application-owned state. Manage skill installation through the owning application;
+do not create links or synchronize those homes from this repository.
 
 ## Change rules
 
 - Preserve the code-only procedural Three.js contract; do not silently download meshes or art packs.
 - Keep claims honest: distinguish implemented capability from roadmap or design-only documentation.
 - Treat `forge/` as deterministic tooling and `grimoire/` as routed reference material.
+- Put new captures, review comparisons and machine-local inputs in ignored `local-data/`; retained `work/`
+  and `.screenshot/` consumers remain unchanged until a deliberate migration is authorized.
 - Keep backward compatibility for existing sculpt specs unless a migration is explicitly planned.
 - When changing schema, gates, generators, or review behavior, add or update focused tests.
 - Keep `SKILL.md`, `README.md`, `CHANGELOG.md`, and `ROADMAP.md` consistent when release-facing
