@@ -12,15 +12,17 @@ spec, build, review, rig; tests in `forge/tests/`), `grimoire/` the routed refer
 `README.md`, `CHANGELOG.md` and `ROADMAP.md` the release-facing documents. David's additions on top of upstream are
 `backends/blender/` (the headless Blender backend), `integrations/godot/` (the Godot validation harness), `schemas/`,
 `LICENSES/` and `MIXED_LICENSES.md`; `../game-asset-factory`'s `benchmark` is their only consumer. The upstream
-branches mirrored on `origin` stay: never delete branches here. Keeping the whole fork or extracting the additions
-into a small repo of David's own is his open decision (`~/Projects/game-dev/PLAN.md` section 4).
+branches mirrored on `origin` stay: never delete branches here. Retain the fork without expanding its platform;
+use the native backends only when a concrete task benefits. Do not create an extraction project merely to reduce
+repository size. The upstream Three.js workflow is optional, not a prerequisite for making Godot game assets.
 
 Agent tool homes are application-owned state. Manage skill installation through the owning application;
 do not create links or synchronize those homes from this repository.
 
 ## Change rules
 
-- Preserve the code-only procedural Three.js contract; do not silently download meshes or art packs.
+- Preserve the code-only contract when working on procedural Three.js reconstruction; do not silently substitute
+  downloaded meshes or art packs. It does not restrict a consuming game's separately authorized asset choices.
 - Keep claims honest: distinguish implemented capability from roadmap or design-only documentation.
 - Treat `forge/` as deterministic tooling and `grimoire/` as routed reference material.
 - Put new captures, review comparisons and machine-local inputs in ignored `local-data/`; retained `work/`
@@ -34,6 +36,10 @@ do not create links or synchronize those homes from this repository.
 
 ## Verification
 
+For prose/instruction-only changes, review the complete diff and touched local links, run `git diff --check`
+and the affected router/release-metadata checks. For code changes, start with the affected existing tests;
+the complete command below is for cross-cutting work or release, not every edit.
+
 ```bash
 python3 -m unittest discover -s forge/tests -p 'test_*.py'
 ```
@@ -45,24 +51,16 @@ without it they skip, and a green run has not proven the emitted Three.js compil
 Do not report completion without reading the fresh outputs. For visual reconstruction changes,
 structural tests and screenshot/reference-loop validation are separate required gates.
 
-## Mandatory visual screenshot gate
+## Visual review
 
-For every visual reconstruction task, a readable screenshot is a hard prerequisite for visual
-implementation claims and completion:
+Inspect the output through its intended renderer at the intended dimensions and camera. Save and open the
+relevant captures in `local-data/`; inspect motion or extra angles when needed for the claim. Compare with the
+reference and fix visible defects. Structural tests and image scores cannot establish taste or replace looking.
+If capture fails, repair it before making visual claims; do not infer a pass from code or runtime readiness.
 
-1. Before accepting visual results, verify that the browser/screenshot tooling is installed,
-   authenticated, reachable, and able to capture the running showcase.
-2. Save fresh PNG/JPEG screenshots inside the workspace, including the fixed reference view and the
-   required orbit views. Inline previews alone are not evidence.
-3. Read the saved screenshots back with an image-capable tool and verify they contain the rendered
-   model at the expected dimensions. A screenshot that cannot be opened or visually read is a failed
-   gate.
-4. Produce and retain a side-by-side reference/render comparison, semantic image scoring,
-   pixel/feature comparison, and the `forge/stage4_review/diagnose_render.py` output for the saved
-   render before reporting visual validation.
-5. If capture, file write, readback, comparison, scoring, or diagnosis fails, stop the visual
-   workflow and repair the tooling first. Do not infer visual evidence from runtime readiness,
-   structural tests, inline previews, or code review, and do not claim the visual gate passed.
+An existing staged Three.js reconstruction keeps its executable pass/review contracts; use `SKILL.md` to route
+to their references. Native Blender/Godot tasks do not inherit the entire Three.js scoring and browser workflow.
+No authentication check, repeated comparison matrix or critic panel is required for unrelated maintenance.
 
 ## Gotchas
 

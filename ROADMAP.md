@@ -1,5 +1,9 @@
 # img2threejs Roadmap
 
+Fork scope: retain the Blender/Godot components for concrete consumers; the upstream roadmap below is
+reference, not an obligation for David's games. No new world-generation platform or wholesale fork extraction
+is planned. Current game-lane priorities live in `../PLAN.md` and the games' own guides.
+
 Where img2threejs is going: from rebuilding one object at a time to generating whole playable
 worlds from reference images. For the full technical specification and acceptance criteria of
 in-flight work, see [docs/UPGRADE_PLAN.md](docs/UPGRADE_PLAN.md).

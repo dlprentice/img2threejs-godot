@@ -10,12 +10,13 @@ import tempfile
 import uuid
 from pathlib import Path
 
+from backends.process import run_bounded
+
 from .graph import validate_graph
 from .intake import adapt_object_sculpt_spec
 from .manifest import build_manifest
 
 
-DEFAULT_WINDOWS_BLENDER = Path(r"C:\Program Files\Blender Foundation\Blender 5.2\blender.exe")
 OWNED_OUTPUT_NAMES = {
     "source.spec.json",
     "constructive_graph.json",
@@ -50,7 +51,7 @@ def _blender_path(explicit: Path | None) -> Path:
     elif shutil.which("blender"):
         candidate = Path(shutil.which("blender")).resolve()
     else:
-        candidate = DEFAULT_WINDOWS_BLENDER
+        raise ValueError("Blender was not found; set BLENDER_EXECUTABLE or pass --blender")
     if not candidate.is_file():
         raise ValueError(f"Blender executable does not exist: {candidate}")
     return candidate
@@ -83,39 +84,8 @@ def _git_identity(repository: Path) -> tuple[str, bool]:
     return commit, dirty
 
 
-def _terminate_process_tree(process: subprocess.Popen[str]) -> None:
-    if process.poll() is not None:
-        return
-    if os.name == "nt":
-        subprocess.run(
-            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=20,
-        )
-    else:
-        process.terminate()
-    try:
-        process.wait(timeout=10)
-    except subprocess.TimeoutExpired:
-        process.kill()
-
-
 def _run_blender(command: list[str], *, cwd: Path, timeout_seconds: int) -> subprocess.CompletedProcess[str]:
-    if timeout_seconds <= 0:
-        raise ValueError("timeout_seconds must be positive")
-    process = subprocess.Popen(command, cwd=cwd, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    try:
-        stdout, stderr = process.communicate(timeout=timeout_seconds)
-    except subprocess.TimeoutExpired as error:
-        _terminate_process_tree(process)
-        stdout, stderr = process.communicate()
-        raise TimeoutError(
-            f"Blender build exceeded {timeout_seconds}s and its process tree was terminated\n"
-            f"STDOUT:\n{stdout}\nSTDERR:\n{stderr}"
-        ) from error
-    return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+    return run_bounded(command, cwd=cwd, timeout_seconds=timeout_seconds, label="Blender build")
 
 
 def _refuse_preexisting_outputs(output_directory: Path) -> None:
@@ -216,7 +186,7 @@ def run(
     ).hexdigest()
     try:
         completed = _run_blender(command, cwd=repository_root, timeout_seconds=timeout_seconds)
-    except Exception:
+    except BaseException:
         _clean_failed_outputs(output_directory)
         raise
     (output_directory / "blender.stdout.log").write_text(completed.stdout, encoding="utf-8", newline="\n")

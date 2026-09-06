@@ -21,6 +21,7 @@ if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from backends.blender.runtime.path_safety import safe_asset_path
+from backends.process import run_bounded
 
 
 PROJECT_SOURCE = Path(__file__).with_name("validation_project")
@@ -77,37 +78,8 @@ def _write_json_atomic(path: Path, payload: dict) -> None:
         temporary.unlink(missing_ok=True)
 
 
-def _terminate_process_tree(process: subprocess.Popen[str]) -> None:
-    if process.poll() is not None:
-        return
-    if os.name == "nt":
-        subprocess.run(
-            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=20,
-        )
-    else:
-        process.terminate()
-    try:
-        process.wait(timeout=10)
-    except subprocess.TimeoutExpired:
-        process.kill()
-
-
 def _run_command(command: list[str], cwd: Path, timeout_seconds: int) -> subprocess.CompletedProcess[str]:
-    process = subprocess.Popen(command, cwd=cwd, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    try:
-        stdout, stderr = process.communicate(timeout=timeout_seconds)
-    except subprocess.TimeoutExpired as error:
-        _terminate_process_tree(process)
-        stdout, stderr = process.communicate()
-        raise TimeoutError(
-            f"Godot command exceeded {timeout_seconds}s and its process tree was terminated\n"
-            f"STDOUT:\n{stdout}\nSTDERR:\n{stderr}"
-        ) from error
-    return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+    return run_bounded(command, cwd=cwd, timeout_seconds=timeout_seconds, label="Godot command")
 
 
 def _write_process_logs(artifact_directory: Path, phase: str, result: subprocess.CompletedProcess[str]) -> None:

@@ -6,12 +6,13 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from backends.blender.examples.armored_vehicle_spec import make_armored_vehicle_spec
 from backends.blender.runtime.graph import validate_graph
 from backends.blender.runtime.intake import adapt_object_sculpt_spec
 from backends.blender.runtime.path_safety import safe_asset_path
-from backends.blender.runtime.run_backend import _refuse_preexisting_outputs, _run_blender, _validate_attempt_id
+from backends.blender.runtime.run_backend import _blender_path, _refuse_preexisting_outputs, _run_blender, _validate_attempt_id
 from forge.stage2_spec.validate_sculpt_spec import validate_spec
 
 
@@ -92,12 +93,18 @@ class ArmoredVehicleGraphTests(unittest.TestCase):
             _refuse_preexisting_outputs(output)
 
     def test_backend_process_timeout_is_bounded(self) -> None:
-        with self.assertRaisesRegex(TimeoutError, "process tree was terminated"):
+        with self.assertRaisesRegex(TimeoutError, "Blender build exceeded"):
             _run_blender(
                 [sys.executable, "-c", "import time; time.sleep(30)"],
                 cwd=Path(self.temporary.name),
                 timeout_seconds=1,
             )
+
+    def test_missing_blender_reports_configuration_not_a_windows_fallback(self) -> None:
+        with mock.patch.dict("os.environ", {}, clear=True), mock.patch(
+            "backends.blender.runtime.run_backend.shutil.which", return_value=None,
+        ), self.assertRaisesRegex(ValueError, "Blender was not found"):
+            _blender_path(None)
 
     def test_backend_rejects_attempt_id_that_cannot_satisfy_manifest_contract(self) -> None:
         with self.assertRaisesRegex(ValueError, "attempt-<UUID>"):

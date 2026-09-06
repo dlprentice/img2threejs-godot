@@ -4,6 +4,11 @@
 
 # img2threejs
 
+This is David's `img2threejs-godot` fork. The retained Blender backend, Godot validation runner and schemas
+support the optional Game Factory benchmark. Ordinary Godot game assets can use native Blender/Python and
+game-local tools directly; the upstream Three.js reconstruction workflow below is not a prerequisite.
+The fork is retained for concrete reuse, not as an active plan to build a universal game-making platform.
+
 **Rebuild the object in a reference image as a code-only, procedural Three.js model.**
 
 Quality-gated, animation-ready, and deliberately token-efficient — reconstruction-by-code, not photogrammetry, mesh extraction, or downloaded art packs.
@@ -87,9 +92,6 @@ It runs under Claude Code, Codex, or OpenCode. It is agent-agnostic: wherever th
 
 ## How it works
 
-A staged sculpting pipeline turns the reference image into a spec, then generates and vision-reviews one build pass at a time — `blockout → structural → form → material → surface → lighting → interaction → optimization` — self-correcting until every identity-defining feature clears its threshold.
-
-**→ Full pipeline diagram, gates, self-correction logic, and the token-efficiency design: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**
 A staged sculpting pipeline turns the reference image into a spec, then generates and vision-reviews one build pass at a time — `blockout → structural → form → material → surface → lighting → interaction → optimization` — self-correcting until every identity-defining feature clears its threshold. Deterministic Python scripts handle validation and gating; model tokens are spent only on visual judgment and code.
 
 **→ Full pipeline diagram, gates, self-correction logic, script reference, and the token-efficiency design: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**
@@ -98,19 +100,9 @@ A staged sculpting pipeline turns the reference image into a spec, then generate
 
 ## Quick start
 
-1. **Install** — place this folder in your skills directory:
-
-   ```bash
-   git clone https://github.com/img2threejs/img2threejs.git ~/.claude/skills/img2threejs
-   ```
-
-   If you use more than one host, keep a single checkout and point each entrypoint at it as a
-   symlink, so they cannot drift apart:
-
-   ```text
-   ~/.claude/skills/img2threejs -> <your checkout>
-   ~/.codex/skills/img2threejs  -> <your checkout>
-   ```
+1. **Select the workflow** — use this skill only for procedural Three.js reconstruction or an existing sculpt
+   spec. Manage any skill installation through the owning application; do not write or link its tool-home
+   directories from this checkout. Native Blender/Godot backend work does not require installing the skill.
 
 2. **Invoke** — in Claude Code, attach or point to an object image and run:
 

@@ -3,8 +3,8 @@
 Status: experimental isolated validator; Linux import and rendering verified with Godot 4.7.2.
 
 The integration consumes a validated GLB and `asset_manifest.json` in an isolated validation
-project. Godot's imported scene and gameplay-camera render are the final technical and visual
-authority.
+project. Godot's imported scene and review render establish the checked technical behavior;
+artistic acceptance belongs to the consuming game in its actual gameplay context.
 
 ## Responsibilities
 
@@ -42,6 +42,11 @@ The runner uses `--godot` when supplied, then `GODOT_EXECUTABLE`, then `godot` o
 GDScript validation project uses the standard Godot build. Temporary projects live under `/var/tmp`
 and are removed on exit; completed outputs stay in the supplied artifact directory. The viewport
 renders at 960x540 even when a tiling compositor resizes the window.
+
+Native execution uses the shared bounded cleanup in `backends/process.py`. On POSIX the runner owns the
+tool's process group and propagates main-thread cancellation to it; inherited output pipes cannot turn
+timeout cleanup into an unbounded wait. This is trusted-tool lifecycle management, not a sandbox for
+deliberately detached processes. See the Python-only checks in `backends/blender/tests/test_process.py`.
 
 The runner copies only the required inputs into a newly created disposable validation project, performs a Godot
 editor import pass, then renders through Forward+ to `rts.png`. It verifies required mesh, pivot,
