@@ -38,6 +38,10 @@ native timeout is 180 seconds; cancellation uses the existing bounded process-gr
 directory must be new. It retains the isolated project and input copy, logs, `preview.json`, and frames;
 the record identifies source hash, actual renderer, camera, clip timestamps and decoded PNG hashes.
 
+Imported animation uses Godot's default 30 Hz bake; `--fps` controls playback sampling and PNG output.
+High-rate source keys may therefore interpolate differently after import. See
+[GLTFDocument.generate_scene](https://docs.godotengine.org/en/stable/classes/class_gltfdocument.html#class-gltfdocument-method-generate-scene)
+and check the consuming project's import settings when precise timing or clearance matters.
 Playback advances the native animation at fixed intervals. Frame zero samples time zero; the frame count
 is `ceil(duration × fps)`, so the last output timestamp is `(count - 1) / fps`. Optional encoding uses an
 existing FFmpeg installation, matching the capture FPS:
