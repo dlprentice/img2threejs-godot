@@ -8,6 +8,8 @@ This is David's `img2threejs-godot` fork. The retained Blender backend, Godot va
 support the optional Game Factory benchmark. Ordinary Godot game assets can use native Blender/Python and
 game-local tools directly; the upstream Three.js reconstruction workflow below is not a prerequisite.
 The fork is retained for concrete reuse, not as an active plan to build a universal game-making platform.
+The optional [native motion preview](integrations/godot/README.md#preview-an-animated-glb) lists GLB clips
+and renders selected animation with fixed or bone-follow cameras, independently of the vehicle benchmark.
 
 **Rebuild the object in a reference image as a code-only, procedural Three.js model.**
 

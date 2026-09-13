@@ -1,6 +1,58 @@
 # Godot integration
 
-Status: experimental isolated validator; Linux import and rendering verified with Godot 4.7.2.
+Native tools for Godot 4.7.2: a standalone motion preview and the retained isolated vehicle validator.
+
+## Preview an animated GLB
+
+`preview_motion.py` opens one self-contained GLB in an isolated native Godot scene. It lists imported clips
+and skeletons, or captures a selected animation to fixed 1280×720 PNGs. It needs Python and standard Godot;
+it does not load a game's project, run an editor import, or require a Factory manifest or workflow.
+
+From this repository, first discover the imported names:
+
+```bash
+python3 integrations/godot/preview_motion.py /path/to/character.glb --output local-data/clip-list
+```
+
+Then select a clip and, optionally, a bone for the camera to follow. Use the names in the listing:
+
+```bash
+python3 integrations/godot/preview_motion.py /path/to/character.glb \
+  --animation Walk --follow-bone Hips --duration 4 --fps 30 \
+  --camera-center 0,1,0 --camera-offset 4,2,6 --ortho-size 3.5 \
+  --output local-data/walk-preview
+```
+
+The fixed camera targets `--camera-center`; following adds the chosen bone's displacement from frame zero
+to that target. Neither mode edits the model or removes root motion. Camera size is an explicit vertical
+span in source units, with no automatic animated-bounds claim. Inspect the framing and adjust it for the
+asset. The floor is at Y=-0.005 with a one-unit grid extending ±100 units. Imported transforms and materials
+are retained. `--loop source` preserves imported playback and holds the final pose of non-looping clips;
+`--loop linear` or `--loop ping-pong` explicitly override playback for seam inspection. The record identifies
+both the source mode and the requested override, without changing the input GLB. Multiple players or matching skeletons
+need `--player-path` or `--skeleton-path`, as reported in the listing.
+
+The default is four seconds at 30 FPS through Forward+. `--rendering-method gl_compatibility` selects the
+Compatibility renderer. `--godot`, then `GODOT_EXECUTABLE`, then PATH select the executable. The default
+native timeout is 180 seconds; cancellation uses the existing bounded process-group cleanup. The output
+directory must be new. It retains the isolated project and input copy, logs, `preview.json`, and frames;
+the record identifies source hash, actual renderer, camera, clip timestamps and decoded PNG hashes.
+
+Playback advances the native animation at fixed intervals. Frame zero samples time zero; the frame count
+is `ceil(duration × fps)`, so the last output timestamp is `(count - 1) / fps`. Optional encoding uses an
+existing FFmpeg installation, matching the capture FPS:
+
+```bash
+ffmpeg -n -framerate 30 -i local-data/walk-preview/frame-%05d.png \
+  -c:v libx264 -pix_fmt yuv420p -movflags +faststart local-data/walk-preview.mp4
+```
+
+This is asset playback for inspection. It does not establish foot planting, collisions, blend transitions,
+gameplay suitability, editor texture/LOD import equivalence or real-time performance. Review the resulting
+motion and the consuming game's actual import before adoption. External GLB resources are unsupported;
+embed buffers/textures first. Ordinary provenance URLs in glTF `extras` are preserved.
+
+## Retained vehicle validator
 
 The integration consumes a validated GLB and `asset_manifest.json` in an isolated validation
 project. Godot's imported scene and review render establish the checked technical behavior;

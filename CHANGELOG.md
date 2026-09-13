@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased — fork integrations
 
+### Added
+- Optional native GLB motion preview: clip/skeleton listing, fixed-step PNG sequences, explicit camera
+  framing and bone following, retained loop behavior, source identity and decoded capture integrity.
+
 ### Changed
 - Narrow the reconstruction skill to its actual Three.js route, remove duplicated prompt itineraries and
   agent-home installation instructions, and keep native Blender/Godot work independent of staged review rituals.
