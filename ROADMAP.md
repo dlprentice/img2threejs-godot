@@ -4,7 +4,8 @@ Fork scope: retain the Blender/Godot components for concrete consumers; the upst
 reference, not an obligation for David's games. No new world-generation platform or wholesale fork extraction
 is planned. Current game-lane priorities live in `../PLAN.md` and the games' own guides.
 The standalone [Godot motion preview](integrations/godot/README.md#preview-an-animated-glb) is available for
-asset inspection; it adds no requirement to the staged reconstruction route or a consuming game's workflow.
+asset inspection, including optional surface clearance against a chosen plane. It adds no requirement to
+the staged reconstruction route or a consuming game's workflow.
 
 Where img2threejs is going: from rebuilding one object at a time to generating whole playable
 worlds from reference images. For the full technical specification and acceptance criteria of

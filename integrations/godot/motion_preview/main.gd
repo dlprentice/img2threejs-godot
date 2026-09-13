@@ -1,6 +1,7 @@
 extends Node3D
 
 const DIMENSIONS := Vector2i(1280, 720)
+const SurfaceClearance = preload("res://clearance.gd")
 var request: Dictionary
 var record: Dictionary
 var players: Array[AnimationPlayer] = []
@@ -225,6 +226,18 @@ func _run() -> void:
 	await get_tree().process_frame
 	if followed_skeleton != null:
 		initial_follow_position = _bone_position()
+	var measurement := SurfaceClearance.new()
+	var measuring: bool = request.get("measureFloorY") != null
+	if measuring:
+		var material_name := String(request.surfaceMaterial) if request.surfaceMaterial != null else ""
+		var measurement_error: String = measurement.initialize(model, float(request.measureFloorY), material_name)
+		if not measurement_error.is_empty():
+			_fail("Surface measurement: " + measurement_error)
+			return
+		record["clearance"] = measurement.describe()
+		record.clearance["summary"] = {"minimumY": null, "minimumClearance": null,
+			"minimumFrame": null, "minimumOutputTimeSeconds": null,
+			"firstBelowFloorFrame": null, "belowFloorFrameCount": 0}
 	record["mode"] = "capture"
 	record["animation"] = clip_name
 	record["playerPath"] = String(model.get_path_to(selected))
@@ -267,12 +280,30 @@ func _run() -> void:
 		if saved.load(String(request.output).path_join(filename)) != OK or saved.get_size() != DIMENSIONS:
 			_fail("Saved PNG cannot be decoded at the requested dimensions: %s" % filename)
 			return
-		record.frames.append({
+		var frame := {
 			"file": filename, "dimensions": [image.get_width(), image.get_height()],
 			"sha256": FileAccess.get_sha256(String(request.output).path_join(filename)),
 			"outputTimeSeconds": output_time, "animationTimeSeconds": actual_time,
 			"playing": selected.is_playing(), "cameraTarget": [target.x, target.y, target.z],
-		})
+		}
+		if measuring:
+			var measured: Dictionary = measurement.sample()
+			if measured.has("error"):
+				_fail("Surface measurement: " + String(measured.error))
+				return
+			measured["minimumClearance"] = float(measured.minimumY) - float(request.measureFloorY)
+			frame["clearance"] = measured
+			var summary: Dictionary = record.clearance.summary
+			if summary.minimumY == null or float(measured.minimumY) < float(summary.minimumY):
+				summary.minimumY = measured.minimumY
+				summary.minimumClearance = measured.minimumClearance
+				summary.minimumFrame = index
+				summary.minimumOutputTimeSeconds = output_time
+			if int(measured.belowFloorVertexCount) > 0:
+				if summary.firstBelowFloorFrame == null:
+					summary.firstBelowFloorFrame = index
+				summary.belowFloorFrameCount += 1
+		record.frames.append(frame)
 	record.status = "complete"
 	_write_record()
 	get_tree().quit()

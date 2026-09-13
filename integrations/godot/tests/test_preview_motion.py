@@ -78,7 +78,10 @@ class MotionPreviewTests(unittest.TestCase):
                        {"duration": 61}, {"duration": 0}, {"ortho_size": -1},
                        {"camera_center": (0, float("inf"), 0)}, {"camera_offset": (0, 1, 0)},
                        {"skeleton_path": "rig"}, {"animation": " "}, {"timeout": 0},
-                       {"rendering_method": "unknown"}, {"loop": "automatic"}):
+                       {"rendering_method": "unknown"}, {"loop": "automatic"},
+                       {"measure_floor_y": 0}, {"animation": "walk", "measure_floor_y": float("inf")},
+                       {"animation": "walk", "surface_material": "Sole"},
+                       {"animation": "walk", "measure_floor_y": 0, "surface_material": " "}):
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
                 self.launch(**kwargs)
             self.assertFalse(self.output.exists())
@@ -132,6 +135,43 @@ class MotionPreviewTests(unittest.TestCase):
             return self.fake_result(command, **kwargs, width=640)
         with self.assertRaisesRegex(RuntimeError, "dimensions"):
             self.launch(animation="walk", fps=1, duration=1, _runner=runner)
+
+    def test_measurement_reports_intersection_without_rejecting_capture(self):
+        def runner(command, **kwargs):
+            request = json.loads((kwargs["cwd"] / "request.json").read_text())
+            self.assertEqual(request["measureFloorY"], 1.5)
+            self.assertEqual(request["surfaceMaterial"], "Boot Sole")
+            self.assertTrue((kwargs["cwd"] / "clearance.gd").is_file())
+            result = self.fake_result(command, **kwargs)
+            path = self.output / "preview.json"
+            record = json.loads(path.read_text())
+            record["frames"][0]["clearance"] = {
+                "minimumY": 1.4, "referencedVertexCount": 3, "belowFloorVertexCount": 1,
+            }
+            path.write_text(json.dumps(record))
+            return result
+        result = self.launch(animation="walk", fps=1, duration=1, measure_floor_y=1.5,
+                             surface_material="Boot Sole", _runner=runner)
+        self.assertEqual(result["status"], "complete")
+        self.assertEqual(result["frames"][0]["clearance"]["belowFloorVertexCount"], 1)
+
+    def test_missing_or_invalid_surface_measurements_fail(self):
+        values = [None, [], {},
+                  {"minimumY": float("nan"), "referencedVertexCount": 3, "belowFloorVertexCount": 0},
+                  {"minimumY": True, "referencedVertexCount": 3, "belowFloorVertexCount": 0},
+                  {"minimumY": 0, "referencedVertexCount": 0, "belowFloorVertexCount": 0},
+                  {"minimumY": 0, "referencedVertexCount": 3, "belowFloorVertexCount": 4}]
+        for index, value in enumerate(values):
+            self.output = self.root / f"measurement-{index}"
+            def runner(command, **kwargs):
+                result = self.fake_result(command, **kwargs)
+                path = self.output / "preview.json"
+                record = json.loads(path.read_text())
+                record["frames"][0]["clearance"] = value
+                path.write_text(json.dumps(record))
+                return result
+            with self.subTest(value=value), self.assertRaisesRegex(RuntimeError, "surface measurement"):
+                self.launch(animation="walk", fps=1, duration=1, measure_floor_y=0, _runner=runner)
 
     def test_failed_process_keeps_logs_and_is_not_success(self):
         def runner(command, **kwargs):

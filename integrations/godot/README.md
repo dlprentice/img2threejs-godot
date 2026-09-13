@@ -52,6 +52,40 @@ gameplay suitability, editor texture/LOD import equivalence or real-time perform
 motion and the consuming game's actual import before adoption. External GLB resources are unsupported;
 embed buffers/textures first. Ordinary provenance URLs in glTF `extras` are preserved.
 
+### Measure surface clearance
+
+Add `--measure-floor-y 0` to an animation capture to measure surface geometry against the world Y=0
+plane. The plane is explicit and independent of the preview's visual floor at Y=-0.005. Negative
+clearance is a reported observation; it does not fail the capture or change the animation.
+
+```bash
+python3 integrations/godot/preview_motion.py /path/to/character.glb \
+  --animation Walk --follow-bone Hips --measure-floor-y 0 \
+  --surface-material BootSole --output local-data/sole-preview
+```
+
+`--surface-material` optionally selects an exact imported material name. Omit it to measure all source
+mesh surfaces; the report lists their names. No match fails explicitly. `preview.json` records the
+measurement plane, selected surfaces, per-frame minimum world Y and clearance, counts strictly below
+the plane, lowest vertex/surface, and the capture's lowest sample and first intersecting frame.
+
+The check counts unique referenced vertices within each surface, including source meshes hidden by
+visibility settings. Unused position entries do not count; coincident vertices on different surfaces
+remain separate. Native blend shape baking precedes native skeleton baking, with node transforms
+retained. Static surfaces are measured too. Private hidden proxies keep the original mesh and animation
+intact. Skin/morph surfaces require triangles; unresolved binds, invalid geometry and changed source
+topology fail explicitly. Sampling needs a real rendering backend and can add substantial readback
+overhead. It does not measure shader displacement, collision thickness, occlusion or motion between
+sample times, and cannot establish foot planting or gameplay contact.
+
+The focused Python checks run with `python3 -m unittest discover -s integrations/godot/tests`.
+To exercise synthetic native skin/morph geometry, transforms, material selection and unused vertices
+with a working display, run:
+
+```bash
+RUN_MOTION_CLEARANCE_NATIVE=1 python3 -m unittest integrations.godot.tests.test_clearance_native
+```
+
 ## Retained vehicle validator
 
 The integration consumes a validated GLB and `asset_manifest.json` in an isolated validation

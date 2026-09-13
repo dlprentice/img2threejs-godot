@@ -67,7 +67,9 @@ def run(source: Path, output: Path, *, animation: str | None = None,
         camera_offset: tuple[float, float, float] = (4, 2, 6),
         follow_bone: str | None = None, skeleton_path: str | None = None,
         godot: Path | None = None, timeout: int = 180,
-        rendering_method: str = "forward_plus", loop: str = "source", _runner=None) -> dict:
+        rendering_method: str = "forward_plus", loop: str = "source",
+        measure_floor_y: float | None = None, surface_material: str | None = None,
+        _runner=None) -> dict:
     source = source.expanduser().resolve(strict=True)
     if not source.is_file():
         raise ValueError("source must be a regular GLB file")
@@ -88,8 +90,16 @@ def run(source: Path, output: Path, *, animation: str | None = None,
         raise ValueError("rendering method must be forward_plus or gl_compatibility")
     if loop not in ("source", "linear", "ping-pong"):
         raise ValueError("loop must be source, linear or ping-pong")
+    if measure_floor_y is not None:
+        if not math.isfinite(measure_floor_y):
+            raise ValueError("measurement floor Y must be finite")
+        if animation is None:
+            raise ValueError("floor measurement requires an animation")
+    if surface_material is not None and measure_floor_y is None:
+        raise ValueError("surface material requires --measure-floor-y")
     for name, value in (("animation", animation), ("player path", player_path),
-                        ("follow bone", follow_bone), ("skeleton path", skeleton_path)):
+                        ("follow bone", follow_bone), ("skeleton path", skeleton_path),
+                        ("surface material", surface_material)):
         if value is not None and not value.strip():
             raise ValueError(f"{name} must not be empty")
     if skeleton_path and not follow_bone:
@@ -109,7 +119,7 @@ def run(source: Path, output: Path, *, animation: str | None = None,
     (output / ".gdignore").touch()
     project = output / "project"
     project.mkdir()
-    for name in ("project.godot", "main.gd", "main.tscn"):
+    for name in ("project.godot", "main.gd", "main.tscn", "clearance.gd"):
         shutil.copyfile(PROJECT / name, project / name)
     shutil.copyfile(source, project / "source.glb")
     if hashlib.sha256((project / "source.glb").read_bytes()).hexdigest() != digest:
@@ -123,6 +133,7 @@ def run(source: Path, output: Path, *, animation: str | None = None,
         "cameraOffset": list(camera_offset), "followBone": follow_bone,
         "skeletonPath": skeleton_path, "output": str(output), "renderingMethod": rendering_method,
         "loop": loop,
+        "measureFloorY": measure_floor_y, "surfaceMaterial": surface_material,
     }
     (project / "request.json").write_text(json.dumps(request, indent=2) + "\n", encoding="utf-8")
     arguments = [str(executable), "--path", str(project), "--audio-driver", "Dummy",
@@ -162,6 +173,17 @@ def run(source: Path, output: Path, *, animation: str | None = None,
             # header alone cannot establish that a capture survived intact.
             if hashlib.sha256((output / name).read_bytes()).hexdigest() != frame.get("sha256"):
                 raise RuntimeError(f"PNG changed after native decoding: {name}")
+            if measure_floor_y is not None:
+                clearance = frame.get("clearance")
+                if not isinstance(clearance, dict):
+                    raise RuntimeError(f"missing or invalid native surface measurement: {name}")
+                value = clearance.get("minimumY")
+                count = clearance.get("referencedVertexCount")
+                below = clearance.get("belowFloorVertexCount")
+                if (not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value)
+                        or not isinstance(count, int) or isinstance(count, bool) or count <= 0
+                        or not isinstance(below, int) or isinstance(below, bool) or not 0 <= below <= count):
+                    raise RuntimeError(f"missing or invalid native surface measurement: {name}")
     return record
 
 
@@ -180,6 +202,9 @@ def main() -> int:
     parser.add_argument("--camera-offset", type=vector, default=(4, 2, 6), help="camera offset from target x,y,z; default 4,2,6")
     parser.add_argument("--follow-bone", help="bone name; camera follows its displacement from frame zero")
     parser.add_argument("--skeleton-path", help="Skeleton3D path relative to GLB root if bone name is ambiguous")
+    parser.add_argument("--measure-floor-y", type=float,
+                        help="measure referenced surface vertices against this world Y plane; report only")
+    parser.add_argument("--surface-material", help="measure only surfaces with this exact imported material name")
     parser.add_argument("--godot", type=Path)
     parser.add_argument("--rendering-method", choices=("forward_plus", "gl_compatibility"),
                         default="forward_plus", help="default forward_plus; choose the consumer's renderer")
@@ -190,7 +215,8 @@ def main() -> int:
                      fps=args.fps, duration=args.duration, ortho_size=args.ortho_size,
                      camera_center=args.camera_center, camera_offset=args.camera_offset,
                      follow_bone=args.follow_bone, skeleton_path=args.skeleton_path,
-                     godot=args.godot, timeout=args.timeout, rendering_method=args.rendering_method, loop=args.loop)
+                     godot=args.godot, timeout=args.timeout, rendering_method=args.rendering_method, loop=args.loop,
+                     measure_floor_y=args.measure_floor_y, surface_material=args.surface_material)
     except (OSError, ValueError, RuntimeError) as error:
         parser.exit(1, f"motion preview: {error}\n")
     print(json.dumps(record, indent=2))

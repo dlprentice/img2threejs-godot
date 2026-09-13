@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Optional native GLB motion preview: clip/skeleton listing, fixed-step PNG sequences, explicit camera
   framing and bone following, retained loop behavior, source identity and decoded capture integrity.
+- Optional posed surface clearance in motion previews, with per-frame and per-surface measurements,
+  native morph/skin composition and referenced-vertex counting that excludes unused buffer geometry.
 
 ### Changed
 - Narrow the reconstruction skill to its actual Three.js route, remove duplicated prompt itineraries and
