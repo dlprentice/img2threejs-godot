@@ -38,8 +38,13 @@ native timeout is 180 seconds; cancellation uses the existing bounded process-gr
 directory must be new. It retains the isolated project and input copy, logs, `preview.json`, and frames;
 the record identifies source hash, actual renderer, camera, clip timestamps and decoded PNG hashes.
 
-Imported animation uses Godot's default 30 Hz bake; `--fps` controls playback sampling and PNG output.
-High-rate source keys may therefore interpolate differently after import. See
+`--import-fps` selects the animation bake rate from 1 to 240 Hz, with 30 Hz as the default.
+`--fps` independently controls playback sampling and PNG output. For example, compare a clip authored at
+120 Hz using `--import-fps 120 --fps 30` with a default import, or select the consuming project's bake rate.
+Both listing and capture records include `animationImportFps`; changing it affects only the isolated preview.
+Choose a capture FPS fine enough to show the motion being inspected; a 30 FPS output samples once per 1/30 s.
+Higher rates can preserve brief motion between coarse bake samples and increase import work. They do not
+improve the underlying source motion automatically. See
 [GLTFDocument.generate_scene](https://docs.godotengine.org/en/stable/classes/class_gltfdocument.html#class-gltfdocument-method-generate-scene)
 and check the consuming project's import settings when precise timing or clearance matters.
 Playback advances the native animation at fixed intervals. Frame zero samples time zero; the frame count

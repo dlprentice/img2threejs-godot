@@ -69,12 +69,15 @@ def run(source: Path, output: Path, *, animation: str | None = None,
         godot: Path | None = None, timeout: int = 180,
         rendering_method: str = "forward_plus", loop: str = "source",
         measure_floor_y: float | None = None, surface_material: str | None = None,
-        _runner=None) -> dict:
+        import_fps: float = 30.0, _runner=None) -> dict:
     source = source.expanduser().resolve(strict=True)
     if not source.is_file():
         raise ValueError("source must be a regular GLB file")
     if not isinstance(fps, int) or isinstance(fps, bool) or not 1 <= fps <= 120:
         raise ValueError("fps must be an integer between 1 and 120")
+    if (not isinstance(import_fps, (int, float)) or isinstance(import_fps, bool)
+            or not math.isfinite(import_fps) or not 1 <= import_fps <= 240):
+        raise ValueError("import fps must be finite and between 1 and 240")
     if not math.isfinite(duration) or not 0 < duration <= 60:
         raise ValueError("duration must be finite, positive and at most 60 seconds")
     if not math.isfinite(ortho_size) or ortho_size <= 0:
@@ -127,7 +130,7 @@ def run(source: Path, output: Path, *, animation: str | None = None,
     request = {
         "source": str(source), "sourceSha256": digest,
         "animation": animation, "playerPath": player_path,
-        "fps": fps, "durationSeconds": duration,
+        "fps": fps, "importFps": import_fps, "durationSeconds": duration,
         "frameCount": max(1, math.ceil(duration * fps)),
         "orthoSize": ortho_size, "cameraCenter": list(camera_center),
         "cameraOffset": list(camera_offset), "followBone": follow_bone,
@@ -156,6 +159,9 @@ def run(source: Path, output: Path, *, animation: str | None = None,
     record = json.loads(record_path.read_text(encoding="utf-8"))
     if record.get("status") != "complete" or record.get("sourceSha256") != digest:
         raise RuntimeError(f"Godot preview record is incomplete or does not match the source: {record_path}")
+    if (record.get("animationImportFps") != import_fps
+            or isinstance(record.get("animationImportFps"), bool)):
+        raise RuntimeError("Godot preview did not confirm the requested animation import rate")
     if animation is not None:
         frames = record.get("frames", [])
         if len(frames) != request["frameCount"]:
@@ -195,7 +201,9 @@ def main() -> int:
     parser.add_argument("--loop", choices=("source", "linear", "ping-pong"), default="source",
                         help="preserve imported mode by default; explicit overrides affect preview only")
     parser.add_argument("--player-path", help="AnimationPlayer path relative to the imported GLB root")
-    parser.add_argument("--fps", type=int, default=30)
+    parser.add_argument("--fps", type=int, default=30, help="playback sampling and PNG output rate; default 30")
+    parser.add_argument("--import-fps", type=float, default=30.0,
+                        help="animation import bake rate (1–240 Hz), independent of capture FPS; default 30")
     parser.add_argument("--duration", type=float, default=4.0, help="output seconds (0 < duration <= 60); default 4")
     parser.add_argument("--ortho-size", type=float, default=3.5, help="orthographic vertical span in source units")
     parser.add_argument("--camera-center", type=vector, default=(0, 1, 0), help="fixed world target x,y,z; default 0,1,0")
@@ -216,7 +224,8 @@ def main() -> int:
                      camera_center=args.camera_center, camera_offset=args.camera_offset,
                      follow_bone=args.follow_bone, skeleton_path=args.skeleton_path,
                      godot=args.godot, timeout=args.timeout, rendering_method=args.rendering_method, loop=args.loop,
-                     measure_floor_y=args.measure_floor_y, surface_material=args.surface_material)
+                     measure_floor_y=args.measure_floor_y, surface_material=args.surface_material,
+                     import_fps=args.import_fps)
     except (OSError, ValueError, RuntimeError) as error:
         parser.exit(1, f"motion preview: {error}\n")
     print(json.dumps(record, indent=2))

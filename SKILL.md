@@ -20,8 +20,8 @@ or synchronize agent tool homes from this repository.
 
 - **Native Blender/Godot backend work:** use `backends/blender/` or
   `integrations/godot/` and their existing checks. The [native integration guide](integrations/godot/README.md)
-  includes optional animated-GLB preview and posed surface measurements. Stop reading this router here;
-  the consuming game owns art direction and acceptance.
+  includes optional animated-GLB preview, explicit import/capture rates and posed surface measurements.
+  Stop reading this router here; the consuming game owns art direction and acceptance.
 - **Procedural Three.js reconstruction:** preserve the code-only contract. Do not
   silently substitute downloaded meshes, projected detail for missing geometry,
   or an unrelated renderer. Unseen surfaces are inferred, not verified.

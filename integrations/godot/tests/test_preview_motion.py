@@ -46,6 +46,7 @@ class MotionPreviewTests(unittest.TestCase):
         request = json.loads((cwd / "request.json").read_text())
         output = Path(request["output"])
         record = {"status": "complete", "sourceSha256": request["sourceSha256"], "frames": [],
+                  "animationImportFps": request["importFps"],
                   "players": [{"path": "AnimationPlayer", "clips": [{"name": "walk"}]}]}
         if request["animation"] is not None:
             for index in range(request["frameCount"]):
@@ -81,7 +82,9 @@ class MotionPreviewTests(unittest.TestCase):
                        {"rendering_method": "unknown"}, {"loop": "automatic"},
                        {"measure_floor_y": 0}, {"animation": "walk", "measure_floor_y": float("inf")},
                        {"animation": "walk", "surface_material": "Sole"},
-                       {"animation": "walk", "measure_floor_y": 0, "surface_material": " "}):
+                       {"animation": "walk", "measure_floor_y": 0, "surface_material": " "},
+                       {"import_fps": 0}, {"import_fps": 241}, {"import_fps": True},
+                       {"import_fps": float("nan")}, {"import_fps": "30"}):
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
                 self.launch(**kwargs)
             self.assertFalse(self.output.exists())
@@ -108,6 +111,7 @@ class MotionPreviewTests(unittest.TestCase):
             return self.fake_result(command, **kwargs)
         result = self.launch(_runner=runner)
         self.assertEqual(result["players"][0]["clips"][0]["name"], "walk")
+        self.assertEqual(result["animationImportFps"], 30)
         self.assertFalse(list(self.output.glob("*.png")))
 
     def test_capture_propagates_explicit_controls_and_fixed_frames(self):
@@ -129,6 +133,27 @@ class MotionPreviewTests(unittest.TestCase):
                              camera_center=(1, 2, 3), follow_bone="pelvis", skeleton_path="rig/Skeleton3D",
                              loop="linear", _runner=runner)
         self.assertEqual(len(result["frames"]), 3)
+
+    def test_import_rate_is_independent_of_output_frame_count(self):
+        def runner(command, **kwargs):
+            request = json.loads((kwargs["cwd"] / "request.json").read_text())
+            self.assertEqual(request["importFps"], 59.94)
+            self.assertEqual(request["fps"], 2)
+            return self.fake_result(command, **kwargs)
+        result = self.launch(animation="walk", fps=2, duration=1, import_fps=59.94, _runner=runner)
+        self.assertEqual(result["animationImportFps"], 59.94)
+        self.assertEqual(len(result["frames"]), 2)
+
+    def test_wrong_import_rate_in_native_record_fails(self):
+        def runner(command, **kwargs):
+            result = self.fake_result(command, **kwargs)
+            path = self.output / "preview.json"
+            record = json.loads(path.read_text())
+            record["animationImportFps"] = 30
+            path.write_text(json.dumps(record))
+            return result
+        with self.assertRaisesRegex(RuntimeError, "import rate"):
+            self.launch(import_fps=120, _runner=runner)
 
     def test_actual_wrong_png_dimensions_fail_even_when_record_claims_correct_size(self):
         def runner(command, **kwargs):

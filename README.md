@@ -11,6 +11,7 @@ The fork is retained for concrete reuse, not as an active plan to build a univer
 The optional [native motion preview](integrations/godot/README.md#preview-an-animated-glb) lists GLB clips
 and renders selected animation with fixed or bone-follow cameras, independently of the vehicle benchmark.
 Optional surface measurements report posed geometry against a chosen floor plane alongside the frames.
+Animation import rate can be selected independently of the captured frame rate.
 
 **Rebuild the object in a reference image as a code-only, procedural Three.js model.**
 

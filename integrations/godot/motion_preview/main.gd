@@ -157,6 +157,7 @@ func _run() -> void:
 	record = {
 		"status": "running", "source": request.source, "sourceSha256": request.sourceSha256,
 		"engineVersion": Engine.get_version_info().string,
+		"animationImportFps": request.importFps,
 		"renderingMethod": RenderingServer.get_current_rendering_method(),
 		"renderingDriver": RenderingServer.get_current_rendering_driver_name(),
 		"videoAdapter": RenderingServer.get_video_adapter_name(),
@@ -172,7 +173,7 @@ func _run() -> void:
 	if error != OK:
 		_fail("GLTFDocument load failed: %s" % error)
 		return
-	model = document.generate_scene(state)
+	model = document.generate_scene(state, float(request.importFps))
 	if model == null:
 		_fail("GLTFDocument did not generate a scene")
 		return
