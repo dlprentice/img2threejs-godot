@@ -6,6 +6,8 @@ is planned. Current game-lane priorities live in `../PLAN.md` and the games' own
 The standalone [Godot motion preview](integrations/godot/README.md#preview-an-animated-glb) is available for
 asset inspection, including explicit animation import rate and optional surface clearance against a chosen
 plane. It adds no requirement to the staged reconstruction route or a consuming game's workflow.
+Native tools follow the shared development engine alias by default and accept explicit standard/.NET
+engine paths; upgrading the development pin is not a new platform or language migration project.
 
 Where img2threejs is going: from rebuilding one object at a time to generating whole playable
 worlds from reference images. For the full technical specification and acceptance criteria of

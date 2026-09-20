@@ -1,6 +1,10 @@
 # Godot integration
 
-Native tools for Godot 4.7.2: a standalone motion preview and the retained isolated vehicle validator.
+Optional native Godot 4 tools: a standalone motion preview and the retained isolated vehicle validator.
+Both select `--godot /path/to/engine`, then `GODOT_EXECUTABLE`, then `godot-dev`, then `godot` on PATH.
+The shared development alias currently selects Godot 4.8 dev6 standard. Upgrading that shared pin does not
+require edits here. To inspect a consumer's specific standard or .NET build, supply its executable path.
+Neither tool chooses a game's implementation language or requires the Factory scheduler.
 
 ## Preview an animated GLB
 
@@ -33,7 +37,7 @@ both the source mode and the requested override, without changing the input GLB.
 need `--player-path` or `--skeleton-path`, as reported in the listing.
 
 The default is four seconds at 30 FPS through Forward+. `--rendering-method gl_compatibility` selects the
-Compatibility renderer. `--godot`, then `GODOT_EXECUTABLE`, then PATH select the executable. The default
+Compatibility renderer. Engine selection follows the precedence above. The default
 native timeout is 180 seconds; cancellation uses the existing bounded process-group cleanup. The output
 directory must be new. It retains the isolated project and input copy, logs, `preview.json`, and frames;
 the record identifies source hash, actual renderer, camera, clip timestamps and decoded PNG hashes.
@@ -133,7 +137,7 @@ Given an artifact directory containing `asset.glb` and `asset_manifest.json`:
 python3 integrations/godot/run_validation.py --artifact-dir /absolute/path/to/artifact
 ```
 
-The runner uses `--godot` when supplied, then `GODOT_EXECUTABLE`, then `godot` on PATH. This
+The runner uses `--godot` when supplied, then `GODOT_EXECUTABLE`, then `godot-dev`, then `godot` on PATH. This
 GDScript validation project uses the standard Godot build. Temporary projects live under `/var/tmp`
 and are removed on exit; completed outputs stay in the supplied artifact directory. The viewport
 renders at 960x540 even when a tiling compositor resizes the window.

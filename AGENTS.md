@@ -11,7 +11,8 @@ David's fork of `img2threejs/img2threejs` (remote `upstream`; `origin` is `dlpre
 spec, build, review, rig; tests in `forge/tests/`), `grimoire/` the routed reference material, and `SKILL.md`,
 `README.md`, `CHANGELOG.md` and `ROADMAP.md` the release-facing documents. David's additions on top of upstream are
 `backends/blender/` (the headless Blender backend), `integrations/godot/` (the Godot validation harness), `schemas/`,
-`LICENSES/` and `MIXED_LICENSES.md`; `../game-asset-factory`'s `benchmark` is their only consumer. The upstream
+`LICENSES/` and `MIXED_LICENSES.md`. The Factory reference benchmark uses the Blender/validation route;
+`integrations/godot/preview_motion.py` also provides direct GLB inspection without Factory or a game project. The upstream
 branches mirrored on `origin` stay: never delete branches here. Retain the fork without expanding its platform;
 use the native backends only when a concrete task benefits. Do not create an extraction project merely to reduce
 repository size. The upstream Three.js workflow is optional, not a prerequisite for making Godot game assets.
@@ -64,6 +65,8 @@ No authentication check, repeated comparison matrix or critic panel is required 
 
 ## Gotchas
 
-- `integrations/godot/run_validation.py` resolves `--godot`, then `GODOT_EXECUTABLE`, then standard `godot`
-  on PATH. Its disposable project uses `/var/tmp`; its 960x540 viewport is independent of compositor window
+- Both Godot runners resolve `--godot`, then `GODOT_EXECUTABLE`, then `godot-dev`, then `godot` on PATH.
+  The shared development alias currently selects 4.8 dev6 standard; explicit executable paths can select
+  a consumer's standard or .NET build. No Factory registry or script change is needed to test another engine.
+  The validator's disposable project uses `/var/tmp`; its 960x540 viewport is independent of compositor window
   sizing. `../game-asset-factory`'s benchmark calls the shared native `validate-gltf.sh` entrypoint.

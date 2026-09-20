@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   recorded alongside source identity. This allows inspection of brief motion lost by a coarser import bake.
 
 ### Changed
+- Native Godot tools prefer the shared `godot-dev` development selection, retain portable `godot` fallback,
+  and preserve explicit executable overrides for a consumer's standard or .NET build.
 - Narrow the reconstruction skill to its actual Three.js route, remove duplicated prompt itineraries and
   agent-home installation instructions, and keep native Blender/Godot work independent of staged review rituals.
 - Retain the fork as optional tooling; distinguish the inherited roadmap from current game-development work.
@@ -23,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Share bounded native-process cleanup between Blender and Godot, including inherited output pipes,
   early parent exit and outer cancellation; report a missing Blender without a stale Windows fallback.
-- Resolve the Godot validator from `--godot`, `GODOT_EXECUTABLE`, or the installed standard `godot`.
+- Resolve the Godot validator from an explicit selection or installed standard Godot.
 - Keep validation scratch on disk under `/var/tmp` and render at 960x540 when the window is resized.
 
 ## [1.4.4-beta.2]

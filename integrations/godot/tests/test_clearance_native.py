@@ -1,4 +1,4 @@
-"""Opt-in native pose checks; requires Godot 4.7.2 and a working rendering backend."""
+"""Opt-in native pose checks; requires Godot 4 and a working rendering backend."""
 
 import json
 import os
@@ -78,7 +78,7 @@ class NativeClearanceTests(unittest.TestCase):
             self.assertAlmostEqual(samples[120], -0.1, delta=0.0001)
 
     def test_posed_geometry_and_explicit_failures(self):
-        executable = os.environ.get("GODOT_EXECUTABLE") or shutil.which("godot")
+        executable = os.environ.get("GODOT_EXECUTABLE") or shutil.which("godot-dev") or shutil.which("godot")
         self.assertIsNotNone(executable, "set GODOT_EXECUTABLE or put Godot on PATH")
         for rendering_method in ("forward_plus", "gl_compatibility"):
             with self.subTest(rendering_method=rendering_method):

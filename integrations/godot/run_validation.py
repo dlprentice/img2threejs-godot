@@ -237,7 +237,7 @@ def run(
     if not glb_path.is_file() or not manifest_path.is_file():
         raise ValueError("artifact directory must contain asset.glb and asset_manifest.json")
     _refuse_preexisting_outputs(artifact_directory)
-    godot_command = godot or os.environ.get("GODOT_EXECUTABLE") or shutil.which("godot")
+    godot_command = godot or os.environ.get("GODOT_EXECUTABLE") or shutil.which("godot-dev") or shutil.which("godot")
     if not godot_command:
         raise ValueError("Godot was not found; set GODOT_EXECUTABLE or pass --godot")
     executable = Path(godot_command).expanduser().resolve()
@@ -395,7 +395,8 @@ def run(
 def main() -> int:
     parser = argparse.ArgumentParser(description="Import and render an asset in a fresh, correlated Godot validation project.")
     parser.add_argument("--artifact-dir", required=True, type=Path)
-    parser.add_argument("--godot", type=Path)
+    parser.add_argument("--godot", type=Path,
+                        help="engine path; default GODOT_EXECUTABLE, godot-dev, then godot on PATH")
     parser.add_argument("--attempt-id")
     parser.add_argument("--timeout-seconds", type=int, default=180)
     args = parser.parse_args()

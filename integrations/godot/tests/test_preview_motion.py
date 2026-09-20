@@ -3,12 +3,14 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import struct
 import subprocess
 import tempfile
 import unittest
 import zlib
+from unittest.mock import patch
 
 from integrations.godot.preview_motion import inspect_glb, run, vector
 
@@ -56,6 +58,30 @@ class MotionPreviewTests(unittest.TestCase):
                                          "sha256": hashlib.sha256((output / filename).read_bytes()).hexdigest()})
         (output / "preview.json").write_text(json.dumps(record))
         return subprocess.CompletedProcess(command, 0, "preview complete\n", "")
+
+    def test_engine_selection_preserves_overrides_and_portable_fallback(self):
+        for explicit, environment, has_dev, selected in (
+            (True, True, True, "explicit-godot"),
+            (False, True, True, "environment-godot"),
+            (False, False, True, "godot-dev"),
+            (False, False, False, "godot"),
+        ):
+            with self.subTest(selected=selected):
+                expected = self.root / selected
+                expected.touch()
+                self.output = self.root / f"preview-{selected}"
+
+                def which(name):
+                    return None if name == "godot-dev" and not has_dev else str(self.root / name)
+
+                def runner(command, **kwargs):
+                    self.assertEqual(command[0], str(expected))
+                    return self.fake_result(command, **kwargs)
+
+                with patch.dict(os.environ, {"GODOT_EXECUTABLE": str(self.root / "environment-godot") if environment else ""}), patch(
+                    "integrations.godot.preview_motion.shutil.which", side_effect=which,
+                ):
+                    run(self.source, self.output, godot=self.root / "explicit-godot" if explicit else None, _runner=runner)
 
     def test_self_contained_input_rejects_external_resources(self):
         for reference in ("texture.png", "../outside.bin", "https://example.com/model.bin"):

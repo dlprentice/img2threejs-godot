@@ -82,22 +82,29 @@ def _png(path: Path, width: int = 960, height: int = 540) -> None:
 
 
 class GodotRunnerIntegrityTests(unittest.TestCase):
-    def test_godot_resolves_from_environment_or_path(self) -> None:
-        for override in (None, "custom-godot"):
-            with self.subTest(override=override), tempfile.TemporaryDirectory() as directory:
+    def test_godot_selection_preserves_overrides_and_portable_fallback(self) -> None:
+        for explicit, environment, has_dev, selected in (
+            (True, True, True, "explicit-godot"),
+            (False, True, True, "environment-godot"),
+            (False, False, True, "godot-dev"),
+            (False, False, False, "godot"),
+        ):
+            with self.subTest(selected=selected), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 _minimal_artifact(root)
-                path_godot = root / "path-godot"
-                expected = root / override if override else path_godot
+                expected = root / selected
+
+                def which(name):
+                    return None if name == "godot-dev" and not has_dev else str(root / name)
 
                 def runner(command: list[str], cwd: Path, timeout: int) -> subprocess.CompletedProcess[str]:
                     self.assertEqual(str(expected), command[0])
                     return subprocess.CompletedProcess(command, 1, "", "")
 
-                with patch.dict(os.environ, {"GODOT_EXECUTABLE": str(expected) if override else ""}), patch(
-                    "integrations.godot.run_validation.shutil.which", return_value=str(path_godot)
+                with patch.dict(os.environ, {"GODOT_EXECUTABLE": str(root / "environment-godot") if environment else ""}), patch(
+                    "integrations.godot.run_validation.shutil.which", side_effect=which
                 ), self.assertRaisesRegex(RuntimeError, "Godot import failed"):
-                    run(root, _runner=runner)
+                    run(root, godot=root / "explicit-godot" if explicit else None, _runner=runner)
 
     def test_stale_evidence_is_refused_before_launch(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

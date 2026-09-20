@@ -108,7 +108,7 @@ def run(source: Path, output: Path, *, animation: str | None = None,
     if skeleton_path and not follow_bone:
         raise ValueError("skeleton path requires a follow bone")
     digest = inspect_glb(source)
-    command = godot or os.environ.get("GODOT_EXECUTABLE") or shutil.which("godot")
+    command = godot or os.environ.get("GODOT_EXECUTABLE") or shutil.which("godot-dev") or shutil.which("godot")
     if not command:
         raise ValueError("Godot was not found; use --godot or GODOT_EXECUTABLE")
     executable = Path(command).expanduser().resolve()
@@ -213,7 +213,8 @@ def main() -> int:
     parser.add_argument("--measure-floor-y", type=float,
                         help="measure referenced surface vertices against this world Y plane; report only")
     parser.add_argument("--surface-material", help="measure only surfaces with this exact imported material name")
-    parser.add_argument("--godot", type=Path)
+    parser.add_argument("--godot", type=Path,
+                        help="engine path; default GODOT_EXECUTABLE, godot-dev, then godot on PATH")
     parser.add_argument("--rendering-method", choices=("forward_plus", "gl_compatibility"),
                         default="forward_plus", help="default forward_plus; choose the consumer's renderer")
     parser.add_argument("--timeout", type=int, default=180, help="native process timeout seconds")

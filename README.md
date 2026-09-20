@@ -12,6 +12,9 @@ The optional [native motion preview](integrations/godot/README.md#preview-an-ani
 and renders selected animation with fixed or bone-follow cameras, independently of the vehicle benchmark.
 Optional surface measurements report posed geometry against a chosen floor plane alongside the frames.
 Animation import rate can be selected independently of the captured frame rate.
+Both native runners prefer the shared `godot-dev` development engine (currently 4.8 dev6 standard), with
+portable `godot` fallback. `--godot /path/to/engine` and `GODOT_EXECUTABLE` take precedence for consumer-specific
+standard or .NET builds; a shared version upgrade does not require editing these runners.
 
 **Rebuild the object in a reference image as a code-only, procedural Three.js model.**
 
