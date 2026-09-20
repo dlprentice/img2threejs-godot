@@ -2,7 +2,8 @@
 
 Fork scope: retain the Blender/Godot components for concrete consumers; the upstream roadmap below is
 reference, not an obligation for David's games. No new world-generation platform or wholesale fork extraction
-is planned. Current game-lane priorities live in `../PLAN.md` and the games' own guides.
+is planned. Current priorities come from the task and each game's own brief and guide;
+the folder's `../PLAN.md` is retained history, not an active work queue.
 The standalone [Godot motion preview](integrations/godot/README.md#preview-an-animated-glb) is available for
 asset inspection, including explicit animation import rate and optional surface clearance against a chosen
 plane. It adds no requirement to the staged reconstruction route or a consuming game's workflow.
