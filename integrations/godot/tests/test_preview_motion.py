@@ -160,6 +160,20 @@ class MotionPreviewTests(unittest.TestCase):
                              loop="linear", _runner=runner)
         self.assertEqual(len(result["frames"]), 3)
 
+    def test_windowed_capture_selects_wayland_only_in_a_wayland_session(self):
+        for wayland in ("", "wayland-1"):
+            with self.subTest(wayland=wayland), patch.dict(os.environ, {"WAYLAND_DISPLAY": wayland}):
+                self.output = self.root / f"display-{wayland or 'default'}"
+
+                def runner(command, **kwargs):
+                    if wayland:
+                        self.assertEqual(command[command.index("--display-driver") + 1], "wayland")
+                    else:
+                        self.assertNotIn("--display-driver", command)
+                    return self.fake_result(command, **kwargs)
+
+                self.launch(animation="walk", fps=1, duration=1, _runner=runner)
+
     def test_import_rate_is_independent_of_output_frame_count(self):
         def runner(command, **kwargs):
             request = json.loads((kwargs["cwd"] / "request.json").read_text())

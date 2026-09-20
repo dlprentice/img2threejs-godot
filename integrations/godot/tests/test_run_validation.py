@@ -82,6 +82,34 @@ def _png(path: Path, width: int = 960, height: int = 540) -> None:
 
 
 class GodotRunnerIntegrityTests(unittest.TestCase):
+    def test_render_selects_wayland_only_in_a_wayland_session(self) -> None:
+        for wayland in ("", "wayland-1"):
+            with self.subTest(wayland=wayland), tempfile.TemporaryDirectory() as directory, patch.dict(
+                os.environ, {"WAYLAND_DISPLAY": wayland},
+            ):
+                root = Path(directory)
+                _minimal_artifact(root)
+
+                def runner(command, cwd, timeout):
+                    if "--headless" in command:
+                        self.assertNotIn("--display-driver", command)
+                        return subprocess.CompletedProcess(command, 0, "", "")
+                    if wayland:
+                        self.assertEqual(command[command.index("--display-driver") + 1], "wayland")
+                    else:
+                        self.assertNotIn("--display-driver", command)
+                    return subprocess.CompletedProcess(command, 1, "", "")
+
+                with self.assertRaisesRegex(RuntimeError, "Godot render failed"):
+                    run(root, Path("godot-for-test"), _runner=runner)
+
+    def test_missing_optional_window_icon_protocol_is_reported_without_rejecting_asset(self) -> None:
+        result = subprocess.CompletedProcess(["godot"], 0, "",
+            "WARNING: xdg-toplevel-icon protocol not found! Cannot set window icon.\n")
+        messages = _parse_diagnostics("render", result)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0]["code"], "godot-render-warning-allowed")
+
     def test_godot_selection_preserves_overrides_and_portable_fallback(self) -> None:
         for explicit, environment, has_dev, selected in (
             (True, True, True, "explicit-godot"),

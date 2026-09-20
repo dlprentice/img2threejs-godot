@@ -145,6 +145,8 @@ def run(source: Path, output: Path, *, animation: str | None = None,
         arguments.append("--headless")
     else:
         arguments.extend(["--resolution", f"{WIDTH}x{HEIGHT}", "--fixed-fps", str(fps)])
+        if os.environ.get("WAYLAND_DISPLAY"):
+            arguments.extend(["--display-driver", "wayland"])
     runner = _runner or run_bounded
     try:
         result = runner(arguments, cwd=project, timeout_seconds=timeout, label="GLB motion preview")

@@ -5,6 +5,8 @@ Both select `--godot /path/to/engine`, then `GODOT_EXECUTABLE`, then `godot-dev`
 The shared development alias currently selects Godot 4.8 dev6 standard. Upgrading that shared pin does not
 require edits here. To inspect a consumer's specific standard or .NET build, supply its executable path.
 Neither tool chooses a game's implementation language or requires the Factory scheduler.
+Windowed runs select Wayland when `WAYLAND_DISPLAY` is present; otherwise Godot keeps its platform default.
+Headless imports and listings do not require a display.
 
 ## Preview an animated GLB
 

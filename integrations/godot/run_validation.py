@@ -47,6 +47,8 @@ WARNING_PATTERNS = (
 # Harmless messages must be matched in full. Unknown warnings fail the attempt.
 ALLOWED_WARNING_PATTERNS = (
     re.compile(r"^WARNING: The --position argument is ignored by the current display server\.?$"),
+    # This optional Wayland protocol sets the window icon, not the rendered asset.
+    re.compile(r"^WARNING: xdg-toplevel-icon protocol not found! Cannot set window icon\.$"),
 )
 ANSI_PATTERN = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 
@@ -287,21 +289,20 @@ def run(
             raise RuntimeError(f"Godot import failed with exit code {import_result.returncode}")
 
         render_started_ns = time.time_ns()
-        render_result = runner(
-            [
-                str(executable),
-                "--path",
-                str(project),
-                "--rendering-method",
-                "forward_plus",
-                "--resolution",
-                "960x540",
-                "--position",
-                "5000,5000",
-            ],
-            project,
-            timeout_seconds,
-        )
+        render_arguments = [
+            str(executable),
+            "--path",
+            str(project),
+            "--rendering-method",
+            "forward_plus",
+            "--resolution",
+            "960x540",
+            "--position",
+            "5000,5000",
+        ]
+        if os.environ.get("WAYLAND_DISPLAY"):
+            render_arguments.extend(["--display-driver", "wayland"])
+        render_result = runner(render_arguments, project, timeout_seconds)
         _write_process_logs(artifact_directory, "render", render_result)
         render_messages = _parse_diagnostics("render", render_result)
         if render_result.returncode != 0:

@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Retain the fork as optional tooling; distinguish the inherited roadmap from current game-development work.
 
 ### Fixed
+- Windowed native Godot runs use an available Wayland session directly instead of trying a stale X11 display.
+  The validator records a missing optional window-icon protocol without treating it as an asset defect.
 - Share bounded native-process cleanup between Blender and Godot, including inherited output pipes,
   early parent exit and outer cancellation; report a missing Blender without a stale Windows fallback.
 - Resolve the Godot validator from an explicit selection or installed standard Godot.
