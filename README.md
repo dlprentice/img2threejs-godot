@@ -1,5 +1,7 @@
 <div align="center">
 
+> **Retired on 2026-09-25 and archived.** David's games now author their own content with Blender, Python and Godot inside each game repository; nothing depends on this repository.
+
 <img src="assets/logo.svg" width="112" height="104" alt="img2threejs logo" />
 
 # img2threejs
